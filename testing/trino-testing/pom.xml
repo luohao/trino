@@ -187,5 +187,9 @@
             <artifactId>jmh-generator-annprocess</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-tidb</artifactId>
+        </dependency>
     </dependencies>
 </project>

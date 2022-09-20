@@ -161,6 +161,7 @@
         <module>plugin/trino-thrift</module>
         <module>plugin/trino-thrift-api</module>
         <module>plugin/trino-thrift-testing-server</module>
+        <module>plugin/trino-tidb</module>
         <module>plugin/trino-tpcds</module>
         <module>plugin/trino-tpch</module>
         <module>service/trino-proxy</module>
@@ -632,6 +633,12 @@
             <dependency>
                 <groupId>io.trino</groupId>
                 <artifactId>trino-thrift-testing-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.trino</groupId>
+                <artifactId>trino-tidb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
