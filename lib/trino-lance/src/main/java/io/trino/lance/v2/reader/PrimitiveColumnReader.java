@@ -1,0 +1,242 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.trino.lance.v2.reader;
+
+import com.google.common.collect.ImmutableList;
+import io.trino.lance.LanceDataSource;
+import io.trino.lance.v2.metadata.ColumnMetadata;
+import io.trino.lance.v2.metadata.Field;
+import io.trino.lance.v2.metadata.MiniBlockLayout;
+import io.trino.lance.v2.metadata.PageLayout;
+import io.trino.lance.v2.metadata.PageMetadata;
+import io.trino.spi.block.Block;
+import io.trino.spi.block.BlockBuilder;
+import io.trino.spi.type.Type;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.google.common.base.Verify.verify;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
+
+public class PrimitiveColumnReader
+        implements ColumnReader
+{
+    private final LanceDataSource dataSource;
+    private final ColumnMetadata columnMetadata;
+    private final Type type;
+    private final List<PageMetadata> pages;
+    private final List<Range> ranges;
+
+    private PageReader pageReader;
+    private int nextBatchSize;
+
+    private long globalRowOffset;   // global row number
+    private int pageIndex;          // current page being processed
+    private long pageOffset;
+    private int rangeIndex;         // current range being processed
+    private long rangeOffset;
+
+    public PrimitiveColumnReader(
+            LanceDataSource dataSource,
+            Field field,
+            ColumnMetadata columnMetadata,
+            List<Range> ranges)
+    {
+        requireNonNull(field, "field is null");
+        this.dataSource = requireNonNull(dataSource, "dataSource is null");
+        this.type = field.toTrinoType();
+        this.columnMetadata = requireNonNull(columnMetadata, "columnMetadata is null");
+        this.pages = requireNonNull(columnMetadata.getPages(), "pages is null");
+        this.ranges = requireNonNull(ranges, "ranges is null");
+
+        this.globalRowOffset = 0;
+        this.pageIndex = 0;
+        this.rangeIndex = 0;
+    }
+
+    @Override
+    public void prepareNextRead(int batchSize)
+    {
+        nextBatchSize = batchSize;
+    }
+
+    @Override
+    public Block readBlock()
+    {
+        if (rangeIndex >= ranges.size()) {
+            throw new RuntimeException("no more ranges to read, something went wrong in LanceReader");
+        }
+
+        BlockBuilder blockBuilder = type.createBlockBuilder(null, nextBatchSize);
+        int blockOffset = 0;
+        Range currentRange = ranges.get(rangeIndex);
+        PageMetadata currentPage = pages.get(pageIndex);
+        while (blockOffset < nextBatchSize) {
+            // move to next page
+            while (currentPage.numRows() + globalRowOffset <= currentRange.start() + rangeOffset) {
+                globalRowOffset += currentPage.numRows();
+                advancePage();
+                currentPage = pages.get(pageIndex);
+            }
+
+            // find all ranges in current page
+            ImmutableList.Builder<Range> builder = ImmutableList.builder();
+            long remaining = nextBatchSize - blockOffset;
+            while (remaining > 0 && currentPage.numRows() + globalRowOffset > currentRange.start() + rangeOffset) {
+                long start = max(currentRange.start() + rangeOffset, globalRowOffset);
+                long startInPage = start - globalRowOffset;
+                long endInPage = min(startInPage + min(currentRange.length() - rangeOffset, remaining), currentPage.numRows());
+                boolean lastInPage = (endInPage + globalRowOffset) >= currentRange.end();
+                builder.add(Range.of(startInPage, endInPage));
+                remaining -= endInPage - startInPage;
+                pageOffset = endInPage - globalRowOffset;
+                rangeOffset = endInPage - currentRange.start();
+
+                if (lastInPage) {
+                    rangeIndex++;
+                    rangeOffset = 0;
+                    if (rangeIndex == ranges.size()) {
+                        break;
+                    }
+                    currentRange = ranges.get(rangeIndex);
+                }
+                else {
+                    break;
+                }
+            }
+
+            // decode the page with ranges for current batch
+            // FIXME: how do we amortize the cost of page metadata read, maybe caching?
+            if (pageReader == null) {
+                pageReader = createPageReader(currentPage);
+            }
+            // TODO: should we use a value buffer to hold partial result
+            Block records = pageReader.decodeRanges(builder.build()).getBlock();
+            for (int i = 0; i < records.getPositionCount(); i++) {
+                type.appendTo(records, blockOffset, blockBuilder);
+                blockOffset++;
+            }
+
+            if (pageOffset >= currentPage.numRows()) {
+                globalRowOffset += currentPage.numRows();
+                advancePage();
+            }
+        }
+        verify(blockBuilder.getPositionCount() > 0);
+        return blockBuilder.build();
+    }
+
+    @Override
+    public DecodedPage read()
+    {
+        if (rangeIndex >= ranges.size()) {
+            throw new RuntimeException("no more ranges to read, something went wrong in LanceReader");
+        }
+
+        BlockBuilder blockBuilder = type.createBlockBuilder(null, nextBatchSize);
+        int rowCount = 0;
+        Range currentRange = ranges.get(rangeIndex);
+        PageMetadata currentPage = pages.get(pageIndex);
+        List<DecodedPage> decodedPages = new ArrayList<>();
+        while (rowCount < nextBatchSize) {
+            // move to next page
+            while (currentPage.numRows() + globalRowOffset <= currentRange.start() + rangeOffset) {
+                globalRowOffset += currentPage.numRows();
+                advancePage();
+                currentPage = pages.get(pageIndex);
+            }
+
+            // find all ranges in current page
+            ImmutableList.Builder<Range> builder = ImmutableList.builder();
+            long remaining = nextBatchSize - rowCount;
+            while (remaining > 0 && currentPage.numRows() + globalRowOffset > currentRange.start() + rangeOffset) {
+                long start = max(currentRange.start() + rangeOffset, globalRowOffset);
+                long startInPage = start - globalRowOffset;
+                long endInPage = min(startInPage + min(currentRange.length() - rangeOffset, remaining), currentPage.numRows());
+                boolean lastInPage = (endInPage + globalRowOffset) >= currentRange.end();
+                builder.add(Range.of(startInPage, endInPage));
+                remaining -= endInPage - startInPage;
+                pageOffset = endInPage - globalRowOffset;
+                rangeOffset = endInPage - currentRange.start();
+
+                if (lastInPage) {
+                    rangeIndex++;
+                    rangeOffset = 0;
+                    if (rangeIndex == ranges.size()) {
+                        break;
+                    }
+                    currentRange = ranges.get(rangeIndex);
+                }
+                else {
+                    break;
+                }
+            }
+
+            // decode the page with ranges for current batch
+            // FIXME: how do we amortize the cost of page metadata read, maybe caching?
+            if (pageReader == null) {
+                pageReader = createPageReader(currentPage);
+            }
+            // TODO: should we use a value buffer to hold partial result
+            DecodedPage decodedPage = pageReader.decodeRanges(builder.build());
+            decodedPages.add(decodedPage);
+            rowCount += decodedPage.getNumRows();
+            if (pageOffset >= currentPage.numRows()) {
+                globalRowOffset += currentPage.numRows();
+                advancePage();
+            }
+        }
+
+        if (decodedPages.size() > 1) {
+            // merge all decoded pages
+            List<RepetitionDefinitionUnraveler> unravelers = new ArrayList<>();
+            for (DecodedPage decodedPage : decodedPages) {
+                Block block = decodedPage.getBlock();
+                for (int i = 0; i < block.getPositionCount(); i++) {
+                    if (block.isNull(i)) {
+                        blockBuilder.appendNull();
+                    }
+                    else {
+                        type.appendTo(block, blockBuilder.getPositionCount(), blockBuilder);
+                    }
+                }
+                unravelers.add(decodedPage.getUnraveler());
+            }
+
+            return new DecodedPage(blockBuilder.build(), new CompositeUnraveler(unravelers));
+        }
+        verify(decodedPages.size() > 0);
+        return decodedPages.get(0);
+    }
+
+    private PageReader createPageReader(PageMetadata pageMetadata)
+    {
+        PageLayout layout = pageMetadata.layout();
+        return switch (layout) {
+            // TODO: can we optimize this by caching the page reader and provide different ranges
+            case MiniBlockLayout miniBlockLayout -> new MiniBlockPageReader(dataSource, type, miniBlockLayout, pageMetadata.bufferOffsets(), pageMetadata.numRows());
+            default -> throw new IllegalArgumentException("Unsupported PageLayout: " + layout);
+        };
+    }
+
+    private void advancePage()
+    {
+        pageIndex++;
+        pageOffset = 0;
+        pageReader = null;
+    }
+}
