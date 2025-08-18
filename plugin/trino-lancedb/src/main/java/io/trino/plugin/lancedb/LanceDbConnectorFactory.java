@@ -48,7 +48,7 @@ public class LanceDbConnectorFactory
         Bootstrap app = new Bootstrap(
                 binder -> binder.bind(TypeManager.class).toInstance(context.getTypeManager()),
                 binder -> binder.bind(NodeManager.class).toInstance(context.getNodeManager()),
-                new FileSystemModule(catalogName, context.getNodeManager(), context.getOpenTelemetry(), true),
+                new FileSystemModule(catalogName, context.getCurrentNode().isCoordinator(), context.getOpenTelemetry(), true),
                 binder -> {
                     binder.bind(OpenTelemetry.class).toInstance(context.getOpenTelemetry());
                     binder.bind(Tracer.class).toInstance(context.getTracer());
