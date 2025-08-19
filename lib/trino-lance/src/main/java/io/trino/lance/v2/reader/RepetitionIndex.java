@@ -27,26 +27,17 @@ public class RepetitionIndex
     public static List<RepetitionIndex.RepIndexBlock> from(Slice slice, int depth)
     {
         checkArgument(depth > 0, "depth must be positive");
-        long[][] repetitionIndex = new long[slice.length() / (depth + 1)][depth + 1];
-        for (int i = 0; i < repetitionIndex.length; i++) {
-            repetitionIndex[i] = slice.getLongs(i * 8 * (depth + 1), depth + 1);
-        }
-        boolean chunkHasPreamble = false;
+        boolean hasPreamble = false;
         long offset = 0;
         ImmutableList.Builder<RepIndexBlock> builder = ImmutableList.builder();
-        for (long[] chunkRepetitionIndex : repetitionIndex) {
-            long endCount = chunkRepetitionIndex[0];
-            long partialCount = chunkRepetitionIndex[1];
-            boolean chunkHasTrailer = partialCount > 0;
-            long startCount = endCount;
-            if (chunkHasTrailer) {
-                startCount++;
-            }
-            if (chunkHasPreamble) {
-                startCount++;
-            }
-            builder.add(new RepIndexBlock(offset, startCount, chunkHasPreamble, chunkHasTrailer));
-            chunkHasPreamble = chunkHasTrailer;
+        int stride = (depth + 1) * Long.BYTES;
+        for (int i = 0; i < slice.length() / stride; i++) {
+            long endCount = slice.getLong(i * stride);
+            long partialCount = slice.getLong(i * stride + Long.BYTES);
+            boolean hasTrailer = partialCount > 0;
+            long startCount = endCount + (hasTrailer ? 1 : 0) - (hasPreamble ? 1 : 0);
+            builder.add(new RepIndexBlock(offset, startCount, hasPreamble, hasTrailer));
+            hasPreamble = hasTrailer;
             offset += startCount;
         }
         return builder.build();

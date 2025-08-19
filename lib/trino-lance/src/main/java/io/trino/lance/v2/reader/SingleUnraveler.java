@@ -38,8 +38,8 @@ public class SingleUnraveler
 
     public SingleUnraveler(int[] repetitionLevels, int[] definitionLevels, DefinitionInterpretation[] interpretations)
     {
-        this.repetitionLevels = repetitionLevels;
-        this.definitionLevels = definitionLevels;
+        this.repetitionLevels = repetitionLevels.length == 0 ? null : repetitionLevels;
+        this.definitionLevels = definitionLevels.length == 0 ? null : definitionLevels;
         this.interpretations = interpretations;
 
         IntArrayList levelsToRepetitionBuilder = new IntArrayList();

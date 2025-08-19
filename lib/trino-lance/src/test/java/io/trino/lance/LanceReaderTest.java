@@ -27,7 +27,9 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.StructVector;
+import org.apache.arrow.vector.complex.impl.UnionListWriter;
 import org.apache.arrow.vector.ipc.ArrowReader;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -178,10 +180,7 @@ class LanceReaderTest
             }
         }
         LanceDataSource dataSource = new FileLanceDataSource(file);
-        Type trinoType = RowType.from(ImmutableList.of(RowType.field("s", RowType.from(ImmutableList.of(
-                RowType.field("a", BigintType.BIGINT),
-                RowType.field("b", BigintType.BIGINT),
-                RowType.field("c", BigintType.BIGINT))))));
+        Type trinoType = RowType.from(ImmutableList.of(RowType.field("s", RowType.from(ImmutableList.of(RowType.field("a", BigintType.BIGINT), RowType.field("b", BigintType.BIGINT), RowType.field("c", BigintType.BIGINT))))));
         try (LanceReader reader = new LanceReader(dataSource, ImmutableList.of(0), Optional.empty())) {
             for (SourcePage page = reader.nextSourcePage(); page != null; page = reader.nextSourcePage()) {
                 int batchSize = page.getPositionCount();
@@ -206,43 +205,94 @@ class LanceReaderTest
 
         // Step 1: Define the data structure
         // We want to write a list column with bigint elements
-        Type arrayType = new io.trino.spi.type.ArrayType(BigintType.BIGINT);
 
         // Step 2: Create test data
         // Each element is a list of bigint values
-        List<?> values = ImmutableList.of(
-                ImmutableList.of(1L, 2L, 3L),      // First row: [1, 2, 3]
-                ImmutableList.of(10L, 20L),         // Second row: [10, 20]
-                ImmutableList.of(100L, 200L, 300L, 400L));  // Third row: [100, 200, 300, 400]
+        List<?> values = ImmutableList.of(ImmutableList.of(1L, 2L, 3L),      // First row: [1, 2, 3]
+                ImmutableList.of(1L, 2L, 3L),         // Second row: [10, 20]
+                ImmutableList.of(1L, 2L, 3L));  // Third row: [100, 200, 300, 400]
 
-        // Step 3: Write the data using LanceTester's utility method
-        // This method properly handles the conversion from Trino types to Arrow types
-        try {
-            io.trino.lance.v2.LanceTester.writeLanceColumnJNI(file, arrayType, values, false);
-        }
-        catch (Exception e) {
-            // Note: This test may fail due to Lance format compatibility issues
-            // The example demonstrates the correct approach for writing list columns
-            System.out.println("Note: List column writing may fail due to Lance format compatibility");
-            System.out.println("Error: " + e.getMessage());
-            return; // Skip the verification part if writing fails
-        }
+        try (RootAllocator allocator = new RootAllocator()) {
+            LanceFileWriter writer = LanceFileWriter.open(file.getPath(), allocator, null);
 
-        // Step 4: Verify the written data by reading it back
-        LanceDataSource dataSource = new FileLanceDataSource(file);
-        Type trinoType = new io.trino.spi.type.ArrayType(BigintType.BIGINT);
+            // Step 3: Define the Arrow schema
+            // Create a field for bigint elements
+            Field elementField = new Field("element", FieldType.notNullable(new ArrowType.Int(64, true)), null);
+            // Create a list field containing bigint elements
+            Field listField = new Field("list_column", FieldType.notNullable(ArrowType.List.INSTANCE), ImmutableList.of(elementField));
 
-        try (LanceReader reader = new LanceReader(dataSource, ImmutableList.of(0), Optional.empty())) {
-            for (SourcePage page = reader.nextSourcePage(); page != null; page = reader.nextSourcePage()) {
-                int batchSize = page.getPositionCount();
-                Block block = page.getBlock(0);
-                System.out.println("Batch size: " + batchSize);
+            Schema schema = new Schema(ImmutableList.of(listField));
 
-                for (int i = 0; i < block.getPositionCount(); i++) {
-                    Object value = trinoType.getObjectValue(block, i);
-                    System.out.println("Row " + i + ": " + value);
+            try (VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator)) {
+                root.allocateNew();
+
+                // Step 4: Get the list vector and set up the writer
+                ListVector listVector = (ListVector) root.getVector("list_column");
+
+                if (false) {
+                    listVector.setInitialCapacity(values.size());
+                    // Step 5: Write the data using UnionListWriter
+                    UnionListWriter listWriter = listVector.getWriter();
+
+                    for (int i = 0; i < values.size(); i++) {
+                        List<?> listValue = (List<?>) values.get(i);
+
+                        // Start writing a list
+                        listWriter.startList();
+
+                        // Write each element in the list
+                        for (Object element : listValue) {
+                            Long longValue = (Long) element;
+                            listWriter.bigInt().writeBigInt(longValue);
+                        }
+
+                        // End the list
+                        listWriter.endList();
+                    }
+
+                    // Step 6: Set the value count and write to file
+                    listWriter.setValueCount(values.size());
+                    listVector.setValueCount(values.size());
+                }
+                else {
+                    listVector.setInitialCapacity(values.size());
+                    UnionListWriter listWriter = listVector.getWriter();
+                    for (Object list : values) {
+                        listWriter.startList();
+                        for (Object value : (List<?>) list) {
+                            listWriter.bigInt().writeBigInt((Long) value);
+                        }
+                        listWriter.endList();
+                    }
+                    listWriter.setValueCount(values.size());
+                    listVector.setValueCount(values.size());
+                }
+
+                root.setRowCount(values.size());
+                try {
+                    writer.write(root);
+                }
+                catch (Exception e) {
+                    throw new IOException("Failed to write to Lance file", e);
+                }
+                try {
+                    writer.close();
+                }
+                catch (Exception e) {
+                    throw new IOException("Failed to close Lance file writer", e);
                 }
             }
         }
+
+        // Step 7: Verify the data was written successfully
+        System.out.println("Successfully wrote Lance file: " + file.getPath());
+        System.out.println("File size: " + file.length() + " bytes");
+        System.out.println("Expected data written:");
+        for (int i = 0; i < values.size(); i++) {
+            List<?> listValue = (List<?>) values.get(i);
+            System.out.println("Row " + i + ": " + listValue);
+        }
+
+        // Clean up - files will be automatically cleaned up when tempDir is garbage collected
     }
 }

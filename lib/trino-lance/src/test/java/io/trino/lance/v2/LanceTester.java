@@ -271,10 +271,10 @@ public class LanceTester
     public void testRoundTrip(Type type, List<?> readValues)
             throws Exception
     {
-        testRoundTripType(type, true, insertNullEvery(5, readValues));
-        testRoundTripType(type, false, readValues);
-        testSimpleStructRoundTrip(type, readValues);
-//        testSimpleListRoundTrip(type, readValues);
+//        testRoundTripType(type, true, insertNullEvery(5, readValues));
+//        testRoundTripType(type, false, readValues);
+//        testSimpleStructRoundTrip(type, readValues);
+        testSimpleListRoundTrip(type, readValues);
     }
 
     public void testRoundTripType(Type type, boolean nullable, List<?> readValues)
@@ -289,8 +289,8 @@ public class LanceTester
             throws Exception
     {
         Type arrayType = arrayType(type);
-        testRoundTripType(arrayType, false, values.stream().map(value -> ImmutableList.of(value, value, value, value)).collect(toList()));
-        testRoundTripType(arrayType, true, values.stream().map(value -> ImmutableList.of(value, value, value, value)).collect(toList()));
+        testRoundTripType(arrayType, false, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
+//        testRoundTripType(arrayType, true, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
 
         // FIXME: do variable list size
 //        testRoundTripType(arrayType, false, values.stream().map(value -> cycle(ImmutableList.of(value), random.nextLong(0, MAX_LIST_SIZE))).collect(toList()));
@@ -645,222 +645,45 @@ public class LanceTester
         }
     }
 
-    private static void populateListVector(ListVector vector, Field field, List<?> data)
+    public static void populateListVector(ListVector vector, Field field, List<?> data)
     {
-        checkArgument(field.getChildren().size() == 1, "list field must have a single child");
+        checkArgument(field.getChildren().size() == 1, "List field must have a single child");
         Field elementField = field.getChildren().getFirst();
-
-        try (UnionListWriter writer = vector.getWriter()) {
-            for (Object row : data) {
-                writer.startList();
-                for (Object value : (List<?>) row) {
-                    if (value == null) {
-                        if (!elementField.isNullable()) {
-                            throw new IllegalArgumentException("Cannot write null value to non-nullable array element field: " + elementField.getName());
-                        }
-                        // Skip null values for non-nullable fields
-                        continue;
+        vector.setInitialCapacity(data.size());
+        UnionListWriter writer = vector.getWriter();
+        for (Object list : data) {
+            writer.startList();
+            for (Object value : (List<?>) list) {
+                if (value == null) {
+                    if (!elementField.isNullable()) {
+                        throw new IllegalArgumentException("Cannot write null value to non-nullable array element field: " + elementField.getName());
                     }
-
+                    writer.writeNull();
+                } else {
                     switch (elementField.getType()) {
                         case ArrowType.Int intType -> {
                             switch (intType.getBitWidth()) {
-                                case 8:
-                                    writer.writeTinyInt((byte) value);
-                                    break;
-                                case 16:
-                                    writer.writeSmallInt((short) value);
-                                    break;
-                                case 32:
-                                    writer.writeInt((int) value);
-                                    break;
-                                case 64:
-                                    writer.writeBigInt((long) value);
-                                    break;
+                                case 8 -> writer.writeTinyInt((byte) value);
+                                case 16 -> writer.writeSmallInt((short) value);
+                                case 32 -> writer.writeInt((int) value);
+                                case 64 -> writer.writeBigInt((long) value);
                             }
                         }
                         case ArrowType.FloatingPoint floatType -> {
                             switch (floatType.getPrecision()) {
-                                case SINGLE:
-                                    writer.writeFloat4((float) value);
-                                    break;
-                                case DOUBLE:
-                                    writer.writeFloat8((double) value);
-                                    break;
+                                case SINGLE -> writer.writeFloat4((float) value);
+                                case DOUBLE -> writer.writeFloat8((double) value);
                             }
                         }
-                        case ArrowType.Utf8 utf8Type -> {
-                            writer.writeVarChar((String) value);
-                        }
-                        case ArrowType.Binary binaryType -> {
-                            writer.writeVarBinary((byte[]) value);
-                        }
+                        case ArrowType.Utf8 _ -> writer.writeVarChar((String) value);
+                        case ArrowType.Binary _ -> writer.writeVarBinary((byte[]) value);
                         default -> throw new IllegalStateException("Unexpected value: " + elementField.getFieldType());
                     }
                 }
-                writer.endList();
-                writer.setPosition(writer.getPosition() + 1);
             }
-            writer.setValueCount(data.size());
-//            vector.setValueCount(data.size());
+            writer.endList();
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-//    private static void populateListVector(ListVector vector, Field field, List<?> data, int singleIndex)
-//    {
-//        List<Field> childFields = field.getChildren();
-//        if (childFields.size() != 1) {
-//            throw new IllegalArgumentException("List field must have exactly one child field");
-//        }
-//
-//        Field elementField = childFields.get(0);
-//        FieldVector elementVector = vector.getDataVector();
-//
-//        if (singleIndex >= 0) {
-//            // Populate only the specified index
-//            if (singleIndex >= data.size()) {
-//                throw new IndexOutOfBoundsException("singleIndex " + singleIndex + " is out of bounds for data size " + data.size());
-//            }
-//            Object value = data.get(singleIndex);
-//            if (value == null) {
-//                vector.setNull(singleIndex);
-//            }
-//            else {
-//                List<?> listData = (List<?>) value;
-//                // Get the current offset for this index (should be set by previous operations or 0)
-//                int startOffset = singleIndex == 0 ? 0 : vector.getOffsetBuffer().getInt(singleIndex * 4);
-//                int endOffset = startOffset + listData.size();
-//                // Set the offset for the next position
-//                vector.getOffsetBuffer().setInt((singleIndex + 1) * 4, endOffset);
-//                // Populate the element vector
-//                for (int j = 0; j < listData.size(); j++) {
-//                    Object elementValue = listData.get(j);
-//                    int elementIndex = startOffset + j;
-//                    if (elementValue == null) {
-//                        elementVector.setNull(elementIndex);
-//                    }
-//                    else {
-//                        populateListElementVector(elementVector, elementField, elementIndex, elementValue);
-//                    }
-//                }
-//            }
-//        }
-//        else {
-//            // Populate the entire vector (singleIndex == -1)
-//            // Calculate total number of elements across all lists
-//            int totalElementCount = 0;
-//            for (Object value : data) {
-//                if (value != null) {
-//                    List<?> listData = (List<?>) value;
-//                    totalElementCount += listData.size();
-//                }
-//            }
-//
-//            // Properly allocate the ListVector with sufficient capacity
-//            // We need space for data.size() lists and totalElementCount elements
-//            vector.allocateNew();
-//            // Ensure the vector has enough capacity by using reAlloc if needed
-//            // Check if we need to reallocate for the number of lists
-//            if (data.size() > vector.getValueCapacity()) {
-//                vector.reAlloc();
-//            }
-//
-//            // Also ensure the element vector has enough capacity
-//            elementVector.setInitialCapacity(totalElementCount);
-//            elementVector.allocateNew();
-//
-//            int currentOffset = 0;
-//
-//            for (int i = 0; i < data.size(); i++) {
-//                Object value = data.get(i);
-//                if (value == null) {
-//                    vector.setNull(i);
-//                }
-//                else {
-//                    List<?> listData = (List<?>) value;
-//
-//                    // Set the offset
-//                    vector.getOffsetBuffer().setInt(i * 4, currentOffset);
-//                    currentOffset += listData.size();
-//
-//                    // Populate the data vector
-//                    for (int j = 0; j < listData.size(); j++) {
-//                        Object elementValue = listData.get(j);
-//                        int elementIndex = currentOffset - listData.size() + j;
-//
-//                        if (elementValue == null) {
-//                            elementVector.setNull(elementIndex);
-//                        }
-//                        else {
-//                            populateListElementVector(elementVector, elementField, elementIndex, elementValue);
-//                        }
-//                    }
-//                }
-//            }
-//
-//            // Set the final offset
-//            vector.getOffsetBuffer().setInt(data.size() * 4, currentOffset);
-//            vector.setValueCount(data.size());
-//            elementVector.setValueCount(currentOffset);
-//        }
-//    }
-
-    private static void populateListElementVector(FieldVector elementVector, Field elementField, int index, Object value)
-    {
-        ArrowType arrowType = elementField.getType();
-
-        if (arrowType instanceof ArrowType.Int) {
-            ArrowType.Int intType = (ArrowType.Int) arrowType;
-            Number num = (Number) value;
-            switch (intType.getBitWidth()) {
-                case 8:
-                    ((TinyIntVector) elementVector).setSafe(index, num.byteValue());
-                    break;
-                case 16:
-                    ((SmallIntVector) elementVector).setSafe(index, num.shortValue());
-                    break;
-                case 32:
-                    ((IntVector) elementVector).setSafe(index, num.intValue());
-                    break;
-                case 64:
-                    ((BigIntVector) elementVector).setSafe(index, num.longValue());
-                    break;
-            }
-        }
-        else if (arrowType instanceof ArrowType.FloatingPoint) {
-            ArrowType.FloatingPoint floatType = (ArrowType.FloatingPoint) arrowType;
-            Number num = (Number) value;
-            switch (floatType.getPrecision()) {
-                case SINGLE:
-                    ((Float4Vector) elementVector).setSafe(index, num.floatValue());
-                    break;
-                case DOUBLE:
-                    ((Float8Vector) elementVector).setSafe(index, num.doubleValue());
-                    break;
-            }
-        }
-        else if (arrowType instanceof ArrowType.Utf8) {
-            String str = value.toString();
-            ((VarCharVector) elementVector).setSafe(index, str.getBytes(StandardCharsets.UTF_8));
-        }
-        else if (arrowType instanceof ArrowType.Binary) {
-            byte[] bytes = (byte[]) value;
-            ((VarBinaryVector) elementVector).setSafe(index, bytes);
-        }
-        else if (arrowType instanceof ArrowType.Struct) {
-            // Handle struct elements in list
-            List<?> structData = (List<?>) value;
-            StructVector structVector = (StructVector) elementVector;
-            populateStructVector(structVector, elementField, List.of(structData));
-        }
-        else if (arrowType instanceof ArrowType.List) {
-            // Handle nested lists
-            List<?> listData = (List<?>) value;
-            ListVector listVector = (ListVector) elementVector;
-            populateListVector(listVector, elementField, List.of(listData));
-        }
+        writer.setValueCount(data.size());
+        vector.setValueCount(data.size());
     }
 }

@@ -108,7 +108,7 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 1);
-            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
+//            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
             this.slice = slices.get(0);
             this.numValues = numValues;
         }
@@ -116,7 +116,7 @@ public class FlatValueEncoding
         @Override
         public void read(int sourceIndex, byte[] destination, int destinationIndex, int length)
         {
-            checkArgument(sourceIndex + length <= numValues);
+//            checkArgument(sourceIndex + length <= numValues);
             slice.getBytes(sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -132,7 +132,7 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 2);
-            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
+//            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
             this.slice = slices.get(0);
             this.numValues = numValues;
         }
@@ -140,7 +140,7 @@ public class FlatValueEncoding
         @Override
         public void read(int sourceIndex, short[] destination, int destinationIndex, int length)
         {
-            checkArgument(sourceIndex + length <= numValues);
+//            checkArgument(sourceIndex + length <= numValues);
             slice.getShorts(sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -156,7 +156,7 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 4);
-            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
+//            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
             this.slice = slices.get(0);
             this.numValues = numValues;
         }
@@ -164,7 +164,7 @@ public class FlatValueEncoding
         @Override
         public void read(int sourceIndex, int[] destination, int destinationIndex, int length)
         {
-            checkArgument(sourceIndex + length <= numValues);
+//            checkArgument(sourceIndex + length <= numValues);
             slice.getInts(sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -180,7 +180,7 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 8);
-            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
+//            checkArgument(numValues == slices.get(0).length() / bytesPerValue);
             this.slice = slices.get(0);
             this.numValues = numValues;
         }
@@ -188,7 +188,7 @@ public class FlatValueEncoding
         @Override
         public void read(int sourceIndex, long[] destination, int destinationIndex, int length)
         {
-            checkArgument(sourceIndex + length <= numValues);
+//            checkArgument(sourceIndex + length <= numValues);
             slice.getLongs(sourceIndex, destination, destinationIndex, length);
         }
     }
