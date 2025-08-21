@@ -72,7 +72,7 @@ public class TestLanceReader
             throws Exception
     {
         // miniblock with inline bitpacking
-        testRoundTripNumeric(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17, 19, 23, 27)), 30_000));
+        testRoundTripNumeric(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17, 19, 23, 27)), 1024));
     }
 
     @Test

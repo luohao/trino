@@ -145,7 +145,7 @@ public class MiniBlockPageReader
         levelOffset = 0;
     }
 
-    public static final int padding(int n)
+    public static int padding(int n)
     {
         return (MINIBLOCK_ALIGNMENT - (n & (MINIBLOCK_ALIGNMENT - 1))) & (MINIBLOCK_ALIGNMENT - 1);
     }
@@ -153,59 +153,8 @@ public class MiniBlockPageReader
     @Override
     public Block readRanges(List<Range> ranges)
     {
-        // FIXME: maybe create temp buffer within the scope of readRanges()?
-        valuesBuffer.reset();
-        repetitionBuffer.reset();
-        definitionBuffer.reset();
-        levelOffset = 0;
-
-        for (Range range : ranges) {
-            long rowsNeeded = range.length();
-            boolean needPreamble = false;
-
-            // find first chunk that has row >= range.start
-            int blockIndex = Collections.binarySearch(repetitionIndex, range.start(), (block, key) -> Long.compare(((RepIndexBlock) block).firstRow(), (long) key));
-            if (blockIndex >= 0) {
-                while (blockIndex > 0 && repetitionIndex.get(blockIndex - 1).firstRow() == range.start()) {
-                    blockIndex--;
-                }
-            }
-            else {
-                blockIndex = -(blockIndex + 1) - 1;
-            }
-
-            long toSkip = range.start() - repetitionIndex.get(blockIndex).firstRow();
-            while (rowsNeeded > 0 || needPreamble) {
-                RepIndexBlock chunkIndexBlock = repetitionIndex.get(blockIndex);
-                long rowsAvailable = chunkIndexBlock.startCount() - toSkip;
-                verify(rowsAvailable > 0);
-
-                long rowsToTake = Math.min(rowsNeeded, rowsAvailable);
-                rowsNeeded -= rowsToTake;
-
-                boolean takeTrailer = false;
-                long fullRowsToTake = rowsToTake;
-
-                if (rowsToTake == rowsAvailable && chunkIndexBlock.hasTrailer()) {
-                    takeTrailer = true;
-                    needPreamble = true;
-                    fullRowsToTake--;
-                }
-                else {
-                    needPreamble = false;
-                }
-                // FIXME: loadChunk()
-                // FIXME: merge chunks
-                // ChunkData maps to DecodedMiniBlockChunk
-                readChunk(chunks.get(blockIndex), chunkIndexBlock, toSkip, rowsToTake, needPreamble, takeTrailer);
-
-                // TODO: append the data to the output buffer
-                toSkip = 0;
-                blockIndex++;
-            }
-        }
-
-        return valuesBuffer.createBlock(definitionBuffer.getMergedValues(), repetitionBuffer.getMergedValues(), dictionaryBlock);
+        // TODO: deprecate
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -217,6 +166,7 @@ public class MiniBlockPageReader
         definitionBuffer.reset();
         levelOffset = 0;
 
+        // ChunkInstructions::schedule_instructions
         for (Range range : ranges) {
             long rowsNeeded = range.length();
             boolean needPreamble = false;
@@ -236,12 +186,41 @@ public class MiniBlockPageReader
             while (rowsNeeded > 0 || needPreamble) {
                 RepIndexBlock chunkIndexBlock = repetitionIndex.get(blockIndex);
                 long rowsAvailable = chunkIndexBlock.startCount() - toSkip;
-                verify(rowsAvailable > 0);
+
+                // handle preamble only blocks (rowsAvailable == 0)
+                if (rowsAvailable == 0 && toSkip == 0) {
+                    if (chunkIndexBlock.hasPreamble() && needPreamble) {
+                        readChunk(chunks.get(blockIndex), chunkIndexBlock, toSkip, 0, PreambleAction.TAKE, false);
+                        if (chunkIndexBlock.startCount() > 0 || blockIndex == repetitionIndex.size() - 1) {
+                            needPreamble = false;
+                        }
+                    }
+                    blockIndex++;
+                    continue;
+                }
+
+                if (rowsAvailable == 0 && toSkip > 0) {
+                    toSkip -= chunkIndexBlock.startCount();
+                    blockIndex++;
+                    continue;
+                }
 
                 long rowsToTake = Math.min(rowsNeeded, rowsAvailable);
                 rowsNeeded -= rowsToTake;
 
                 boolean takeTrailer = false;
+                PreambleAction preambleAction;
+                if (chunkIndexBlock.hasPreamble()) {
+                    if (needPreamble) {
+                        preambleAction = PreambleAction.TAKE;
+                    }
+                    else {
+                        preambleAction = PreambleAction.SKIP;
+                    }
+                }
+                else {
+                    preambleAction = PreambleAction.ABSENT;
+                }
                 long fullRowsToTake = rowsToTake;
 
                 if (rowsToTake == rowsAvailable && chunkIndexBlock.hasTrailer()) {
@@ -255,7 +234,7 @@ public class MiniBlockPageReader
                 // FIXME: loadChunk()
                 // FIXME: merge chunks
                 // ChunkData maps to DecodedMiniBlockChunk
-                readChunk(chunks.get(blockIndex), chunkIndexBlock, toSkip, rowsToTake, needPreamble, takeTrailer);
+                readChunk(chunks.get(blockIndex), chunkIndexBlock, toSkip, fullRowsToTake, preambleAction, takeTrailer);
 
                 // TODO: append the data to the output buffer
                 toSkip = 0;
@@ -265,25 +244,23 @@ public class MiniBlockPageReader
         return valuesBuffer.createDecodedPage(definitionBuffer.getMergedValues(), repetitionBuffer.getMergedValues(), defInterpretations, dictionaryBlock);
     }
 
-    public void readChunk(ChunkMetadata chunk, RepIndexBlock chunkIndex, long rowsToSkip, long rowsToTake, boolean needPreamble, boolean takeTrailer)
+    private SelectedRanges mapRange(ChunkReader chunkReader, Range rowRange, PreambleAction preambleAction)
     {
-        // 1. decode the whole miniblock chunk
-        // 2. find the row range start and end from skip/take
-        // 3. use the rep ino to map the row range to an item range
-        // 4. append the data
-        try {
-            long maxRepetitionLevel = defInterpretations.stream().filter(DefinitionInterpretation::isList).count();
-            ChunkReader chunkReader = new ChunkReader(dataSource.readFully(chunk.offsetBytes(), toIntExact(chunk.chunkSizeBytes())), toIntExact(chunk.numValues()), valueBufferAdapter);
-            long rowRangeStart = rowsToSkip;
-            long rowRangeEnd = rowsToSkip + rowsToTake;
-            Range itemRange;
-            Range levelRange;
-            // TODO: full map_ranges
-            if (repetitionEncoding.isPresent()) {
-                int[] rep = chunkReader.readRepetitionLevels();
-                int itemsInPreamble = 0;
-                int firstRowStart = -1;
+        if (repetitionEncoding.isEmpty()) {
+            // if there is no repetition, item and level range are the same as row range
+            return new SelectedRanges(rowRange, rowRange);
+        }
 
+        // 1. if skip or take preamble, we need to find the start of the first row in chunk
+        // 2. seek to the location at range.start
+        //
+
+        long maxRepetitionLevel = defInterpretations.stream().filter(DefinitionInterpretation::isList).count();
+        int[] rep = chunkReader.readRepetitionLevels();
+        long itemsInPreamble = 0;
+        long firstRowStart = -1;
+        switch (preambleAction) {
+            case SKIP, TAKE: {
                 if (definitionEncoding.isPresent()) {
                     int[] def = chunkReader.readDefinitionLevels();
                     for (int i = 0; i < rep.length; i++) {
@@ -303,128 +280,148 @@ public class MiniBlockPageReader
                             break;
                         }
                     }
+                    itemsInPreamble = Math.min(firstRowStart, rep.length);
                 }
-                // FIXME: handle cases where a chunk is entirely partial values
-                verify(firstRowStart != -1);
-                rep = Arrays.copyOfRange(rep, firstRowStart, rep.length);
+                // chunk is entirely preamble
+                if (firstRowStart == -1) {
+                    return new SelectedRanges(Range.of(0, chunkReader.numValues), Range.of(0, rep.length));
+                }
+                break;
+            }
+            case ABSENT: {
+                firstRowStart = 0;
+                break;
+            }
+        }
 
-                // FIXME: handle preamble
-                verify(rowRangeStart < rowRangeEnd);
+        // handle preamble only blocks
+        if (rowRange.start() == rowRange.end()) {
+            return new SelectedRanges(Range.of(0, itemsInPreamble), Range.of(0, firstRowStart));
+        }
 
-                int rowsSeen = 0;
-                int newStart = 0;
-                int newLevelsStart = 0;
-                if (definitionEncoding.isPresent()) {
-                    int[] def = Arrays.copyOfRange(chunkReader.readDefinitionLevels(), firstRowStart, chunkReader.readDefinitionLevels().length - 1);
-                    long leadInvisSeen = 0;
-                    if (rowRangeStart > 0) {
-                        if (def[0] > maxVisibleDefinition) {
-                            leadInvisSeen += 1;
+        // we are reading at least 1 full row if we reach here
+        verify(rowRange.length() > 0);
+        int rowsSeen = 0;
+        int newStart = 0;
+        int newLevelsStart = 0;
+
+        if (definitionEncoding.isPresent()) {
+            int[] def = Arrays.copyOfRange(chunkReader.readDefinitionLevels(), toIntExact(firstRowStart), chunkReader.readDefinitionLevels().length - 1);
+
+            long leadInvisSeen = 0;
+            if (rowRange.start() > 0) {
+                if (def[0] > maxVisibleDefinition) {
+                    leadInvisSeen += 1;
+                }
+                for (int i = 1; i < def.length; i++) {
+                    if (rep[i] == maxRepetitionLevel) {
+                        rowsSeen++;
+                        if (rowsSeen == rowRange.start()) {
+                            newStart = i - toIntExact(leadInvisSeen);
+                            newLevelsStart = i;
+                            break;
                         }
-                        for (int i = 1; i < def.length; i++) {
-                            if (rep[i] == maxRepetitionLevel) {
-                                rowsSeen++;
-                                if (rowsSeen == rowRangeStart) {
-                                    newStart = i + 1 - toIntExact(leadInvisSeen);
-                                    newLevelsStart = i + 1;
-                                    break;
-                                }
-                                if (def[i] > maxVisibleDefinition) {
-                                    leadInvisSeen++;
-                                }
-                            }
+                        if (def[i] > maxVisibleDefinition) {
+                            leadInvisSeen++;
                         }
                     }
+                }
+            }
+
+            rowsSeen++;
+            long newEnd = Long.MAX_VALUE;
+            long newLevelsEnd = rep.length;
+            boolean newStartIsInvisible = def[newLevelsStart] <= maxVisibleDefinition;
+            long trailInvisSeen = newStartIsInvisible ? 0 : 1;
+
+            for (int i = newLevelsStart + 1; i < rep.length; i++) {
+                int repLevel = rep[i];
+                int defLevel = def[i];
+                if (repLevel == maxRepetitionLevel) {
                     rowsSeen++;
-                    long newEnd = Long.MAX_VALUE;
-                    long newLevelsEnd = rep.length;
-                    boolean newStartIsInvisible = def[newLevelsStart] <= maxVisibleDefinition;
-                    long trailInvisSeen = newStartIsInvisible ? 0 : 1;
-
-                    for (int i = newLevelsStart + 1; i < rep.length; i++) {
-                        int repLevel = rep[i];
-                        int defLevel = def[i];
-                        if (repLevel == maxRepetitionLevel) {
-                            rowsSeen++;
-                            if (rowsSeen == rowRangeEnd + 1) {
-                                newEnd = i - trailInvisSeen;
-                                newLevelsEnd = i;
-                                break;
-                            }
-                            if (defLevel > maxVisibleDefinition) {
-                                trailInvisSeen++;
-                            }
-                        }
+                    if (rowsSeen == rowRange.end() + 1) {
+                        newEnd = i - trailInvisSeen;
+                        newLevelsEnd = i;
+                        break;
                     }
-                    if (newEnd == Long.MAX_VALUE) {
-                        newLevelsEnd = rep.length;
-                        newEnd = rep.length - (leadInvisSeen + trailInvisSeen);
+                    if (defLevel > maxVisibleDefinition) {
+                        trailInvisSeen++;
                     }
-                    verify(newEnd != Long.MAX_VALUE);
-                    if (needPreamble) {
-                        newEnd += firstRowStart;
-                        newLevelsEnd += firstRowStart;
-                    }
-                    else {
-                        newStart += firstRowStart;
-                        newEnd += firstRowStart;
-                        newLevelsStart += firstRowStart;
-                        newLevelsEnd += firstRowStart;
-                    }
-                    itemRange = new Range(newStart, newEnd);
-                    levelRange = new Range(newLevelsStart, newLevelsEnd);
-                }
-                else {
-                    if (rowRangeStart > 0) {
-                        for (int i = 1; i < rep.length; i++) {
-                            if (rep[i] == maxRepetitionLevel) {
-                                rowsSeen++;
-                                if (rowsSeen == rowRangeStart) {
-                                    newStart = i + 1;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    long end = rep.length;
-                    if (rowRangeEnd < chunk.numValues()) {
-                        for (int i = newStart; i < rep.length; i++) {
-                            if (rep[i] == toIntExact(maxRepetitionLevel)) {
-                                rowsSeen++;
-                                if (rowsSeen == rowRangeEnd) {
-                                    end = i + 1;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (needPreamble) {
-                        end += firstRowStart;
-                    }
-                    else {
-                        newStart += firstRowStart;
-                        end += firstRowStart;
-                    }
-                    itemRange = new Range(newStart, end);
-                    levelRange = new Range(newStart, end);
                 }
             }
-            else {
-                itemRange = new Range(rowRangeStart, rowRangeEnd);
-                levelRange = itemRange.clone();
+            if (newEnd == Long.MAX_VALUE) {
+                newLevelsEnd = rep.length;
+                newEnd = rep.length - (leadInvisSeen + trailInvisSeen);
             }
+            verify(newEnd != Long.MAX_VALUE);
+            switch (preambleAction) {
+                case SKIP -> {
+                    newStart += firstRowStart;
+                    newEnd += firstRowStart;
+                    newLevelsStart += firstRowStart;
+                    newLevelsEnd += firstRowStart;
+                }
+                case TAKE -> {
+                    newEnd += firstRowStart;
+                    newLevelsEnd += firstRowStart;
+                }
+                default -> {
+                    throw new IllegalArgumentException("Invalid preamble action: " + preambleAction);
+                }
+            }
+            return new SelectedRanges(Range.of(newStart, newEnd), Range.of(newLevelsStart, newLevelsEnd));
+        }
+        else {
+            if (rowRange.start() > 0) {
+                for (int i = 1; i < rep.length; i++) {
+                    if (rep[i] == maxRepetitionLevel) {
+                        rowsSeen++;
+                        if (rowsSeen == rowRange.start()) {
+                            newStart = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            long end = rep.length;
+            if (rowRange.end() < chunkReader.getNumValues()) {
+                for (int i = toIntExact(firstRowStart + newStart + 1); i < rep.length; i++) {
+                    if (rep[i] == maxRepetitionLevel) {
+                        rowsSeen++;
+                        if (rowsSeen == rowRange.end()) {
+                            end = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (preambleAction == PreambleAction.SKIP) {
+                newStart += firstRowStart;
+            }
+            return new SelectedRanges(Range.of(newStart, end), Range.of(newStart, end));
+        }
+    }
 
-            // extend_levels
+    public void readChunk(ChunkMetadata chunk, RepIndexBlock chunkIndex, long rowsToSkip, long rowsToTake, PreambleAction preambleAction, boolean takeTrailer)
+    {
+        // 1. decode the whole miniblock chunk
+        // 2. find the row range start and end from skip/take
+        // 3. use the rep ino to map the row range to an item range
+        // 4. append the data
+        try {
+            ChunkReader chunkReader = new ChunkReader(dataSource.readFully(chunk.offsetBytes(), toIntExact(chunk.chunkSizeBytes())), toIntExact(chunk.numValues()), valueBufferAdapter);
+            // DecodeMiniBlockTask::map_range
+            SelectedRanges selectedRanges = mapRange(chunkReader, Range.of(rowsToSkip, rowsToSkip + rowsToTake + (takeTrailer ? 1 : 0)), preambleAction);
+            Range itemRange = selectedRanges.itemRange();
+            Range levelRange = selectedRanges.levelRange();
+
+            // DecodeMiniBlockTask::extend_levels
             if (!repetitionEncoding.isEmpty()) {
-                if (repetitionBuffer.isEmpty()) {
+                if (repetitionBuffer.isEmpty() && levelOffset > 0) {
                     repetitionBuffer.append(new int[toIntExact(levelOffset)]);
                 }
                 repetitionBuffer.append(Arrays.copyOfRange(chunkReader.readRepetitionLevels(), toIntExact(levelRange.start()), toIntExact(levelRange.length())));
             }
-//            else {
-//                // TODO: FIXME
-//                throw new UnsupportedOperationException();
-//            }
 
             if (!definitionEncoding.isEmpty()) {
                 if (definitionBuffer.isEmpty() && levelOffset > 0) {
@@ -432,10 +429,6 @@ public class MiniBlockPageReader
                 }
                 definitionBuffer.append(Arrays.copyOfRange(chunkReader.readDefinitionLevels(), toIntExact(levelRange.start()), toIntExact(levelRange.length())));
             }
-//            else {
-//                // TODO: FIXME
-//                throw new UnsupportedOperationException();
-//            }
 
             levelOffset += levelRange.length();
             chunkReader.readValues(toIntExact(itemRange.start()), toIntExact(itemRange.length()));
@@ -470,17 +463,26 @@ public class MiniBlockPageReader
         return data;
     }
 
+    public enum PreambleAction
+    {
+        TAKE, SKIP, ABSENT
+    }
+
+    private record SelectedRanges(Range itemRange, Range levelRange) {}
+
     public class ChunkReader<T>
     {
         private final BufferAdapter<T> bufferAdapter;
         private final List<Slice> buffers;
         private final MiniBlockDecoder<T> valueDecoder;
+        private final int numValues;
         private final int[] repetitions;
         private final int[] definitions;
 
         public ChunkReader(Slice chunk, int numValues, BufferAdapter<T> bufferAdapter)
         {
             this.bufferAdapter = bufferAdapter;
+            this.numValues = numValues;
             // decode header
             int offset = 0;
             // FIXME: whats this used
@@ -552,6 +554,11 @@ public class MiniBlockPageReader
         public int[] readRepetitionLevels()
         {
             return repetitions;
+        }
+
+        public int getNumValues()
+        {
+            return numValues;
         }
     }
 }

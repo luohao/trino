@@ -114,7 +114,8 @@ public class LanceTester
                     assertThat(iterator.hasNext()).isTrue();
                     Object expected = iterator.next();
                     Object actual = data.get(i);
-                    assertColumnValueEquals(type, expected, actual);
+//                    System.out.println(i + ": " + actual);
+                    assertColumnValueEquals(type, actual, expected);
                 }
                 rowsProcessed += batchSize;
             }
