@@ -73,11 +73,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiConsumer;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Lists.newArrayList;
 import static io.trino.type.InternalTypeManager.TESTING_TYPE_MANAGER;
+import static java.util.Collections.nCopies;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -91,7 +93,7 @@ public class LanceTester
     public static final ArrowType ARROW_DOUBLE_TYPE = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE);
     public static final ArrowType ARROW_STRING_TYPE = new ArrowType.Utf8();
     public static final ArrowType ARROW_BINARY_TYPE = new ArrowType.Binary();
-    public static final long MAX_LIST_SIZE = 1000;
+    public static final int MAX_LIST_SIZE = 256;
 
     private static final Map<Class<? extends Type>, BiConsumer<FieldVectorContext, List<?>>> typedWriters = Map.of(TinyintType.class, (context, values) -> writeTyped((TinyIntVector) context.vector, values, Byte.class, (i, value) -> ((TinyIntVector) context.vector).setSafe(i, value)), SmallintType.class, (context, values) -> writeTyped((SmallIntVector) context.vector, values, Short.class, (i, value) -> ((SmallIntVector) context.vector).setSafe(i, value)), IntegerType.class, (context, values) -> writeTyped((IntVector) context.vector, values, Integer.class, (i, value) -> ((IntVector) context.vector).setSafe(i, value)), BigintType.class, (context, values) -> writeTyped((BigIntVector) context.vector, values, Long.class, (i, value) -> ((BigIntVector) context.vector).setSafe(i, value)), RealType.class, (context, values) -> writeTyped((Float4Vector) context.vector, values, Float.class, (i, value) -> ((Float4Vector) context.vector).setSafe(i, value)), DoubleType.class, (context, values) -> writeTyped((Float8Vector) context.vector, values, Double.class, (i, value) -> ((Float8Vector) context.vector).setSafe(i, value)), VarcharType.class, (context, values) -> writeTyped((VarCharVector) context.vector, values, String.class, (i, value) -> ((VarCharVector) context.vector).setSafe(i, value.getBytes(StandardCharsets.UTF_8))), VarbinaryType.class, (context, values) -> writeTyped((VarBinaryVector) context.vector, values, byte[].class, (i, value) -> ((VarBinaryVector) context.vector).setSafe(i, value)));
     private static final Random random = new Random();
@@ -290,11 +292,19 @@ public class LanceTester
             throws Exception
     {
         Type arrayType = arrayType(type);
-        testRoundTripType(arrayType, false, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
+//        testRoundTripType(arrayType, false, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
 //        testRoundTripType(arrayType, true, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
 
+//        testRoundTripType(arrayType, false, values.stream().map(value -> nCopies(random.nextInt(MAX_LIST_SIZE), value)).collect(toImmutableList()));
+
+        List<List<?>> data = IntStream.range(0, values.size())
+//                .mapToObj(i -> nCopies(random.nextInt(256), values.get(i)))
+                .mapToObj(i -> nCopies(i % 256, values.get(i)))
+                .collect(toList());
+        testRoundTripType(arrayType, false, data);
+
         // FIXME: do variable list size
-//        testRoundTripType(arrayType, false, values.stream().map(value -> cycle(ImmutableList.of(value), random.nextLong(0, MAX_LIST_SIZE))).collect(toList()));
+//        testRoundTripType(arrayType, false, values.stream().map(value -> nCopies(random.nextInt(0, MAX_LIST_SIZE), value)).collect(toImmutableList()));
 //        testRoundTripType(arrayType, true, insertNullEvery(9, values.stream().map(value -> cycle(ImmutableList.of(value), random.nextLong(0, MAX_LIST_SIZE))).collect(toList())));
     }
 
@@ -660,7 +670,8 @@ public class LanceTester
                         throw new IllegalArgumentException("Cannot write null value to non-nullable array element field: " + elementField.getName());
                     }
                     writer.writeNull();
-                } else {
+                }
+                else {
                     switch (elementField.getType()) {
                         case ArrowType.Int intType -> {
                             switch (intType.getBitWidth()) {

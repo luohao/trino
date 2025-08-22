@@ -100,7 +100,7 @@ public class MiniBlockPageReader
                 int logNumValues = word & 0xF;
                 int dividedBytes = word >>> 4;
                 int chunkSizeBytes = (dividedBytes + 1) * MINIBLOCK_ALIGNMENT;
-                long numValues = i < numWords - 1 ? 1 << logNumValues : numRows - count;
+                long numValues = i < numWords - 1 ? 1 << logNumValues : layout.numItems() - count;
                 count += numValues;
 
                 chunkMetadataBuilder.add(new ChunkMetadata(numValues, chunkSizeBytes, offset));
@@ -252,13 +252,13 @@ public class MiniBlockPageReader
         }
 
         // 1. if skip or take preamble, we need to find the start of the first row in chunk
-        // 2. seek to the location at range.start
-        //
+        // 2. seek to the location at range.start if skip > 0
+        // 3.1. if def exists, walk through rep/def, count invisible items(no entry in item array but has entry in rep/def)
 
         long maxRepetitionLevel = defInterpretations.stream().filter(DefinitionInterpretation::isList).count();
         int[] rep = chunkReader.readRepetitionLevels();
-        long itemsInPreamble = 0;
-        long firstRowStart = -1;
+        int itemsInPreamble = 0;
+        int firstRowStart = -1;
         switch (preambleAction) {
             case SKIP, TAKE: {
                 if (definitionEncoding.isPresent()) {
@@ -306,14 +306,15 @@ public class MiniBlockPageReader
         int newLevelsStart = 0;
 
         if (definitionEncoding.isPresent()) {
-            int[] def = Arrays.copyOfRange(chunkReader.readDefinitionLevels(), toIntExact(firstRowStart), chunkReader.readDefinitionLevels().length - 1);
+//            int[] def = Arrays.copyOfRange(chunkReader.readDefinitionLevels(), toIntExact(firstRowStart), chunkReader.readDefinitionLevels().length - 1);
+            int[] def = chunkReader.readDefinitionLevels();
 
             long leadInvisSeen = 0;
             if (rowRange.start() > 0) {
-                if (def[0] > maxVisibleDefinition) {
+                if (def[firstRowStart] > maxVisibleDefinition) {
                     leadInvisSeen += 1;
                 }
-                for (int i = 1; i < def.length; i++) {
+                for (int i = firstRowStart + 1; i < def.length; i++) {
                     if (rep[i] == maxRepetitionLevel) {
                         rowsSeen++;
                         if (rowsSeen == rowRange.start()) {
@@ -331,10 +332,10 @@ public class MiniBlockPageReader
             rowsSeen++;
             long newEnd = Long.MAX_VALUE;
             long newLevelsEnd = rep.length;
-            boolean newStartIsInvisible = def[newLevelsStart] <= maxVisibleDefinition;
+            boolean newStartIsInvisible = def[firstRowStart + newLevelsStart] <= maxVisibleDefinition;
             long trailInvisSeen = newStartIsInvisible ? 0 : 1;
 
-            for (int i = newLevelsStart + 1; i < rep.length; i++) {
+            for (int i = firstRowStart + newLevelsStart + 1; i < def.length; i++) {
                 int repLevel = rep[i];
                 int defLevel = def[i];
                 if (repLevel == maxRepetitionLevel) {
@@ -354,26 +355,27 @@ public class MiniBlockPageReader
                 newEnd = rep.length - (leadInvisSeen + trailInvisSeen);
             }
             verify(newEnd != Long.MAX_VALUE);
-            switch (preambleAction) {
-                case SKIP -> {
-                    newStart += firstRowStart;
-                    newEnd += firstRowStart;
-                    newLevelsStart += firstRowStart;
-                    newLevelsEnd += firstRowStart;
-                }
-                case TAKE -> {
-                    newEnd += firstRowStart;
-                    newLevelsEnd += firstRowStart;
-                }
-                default -> {
-                    throw new IllegalArgumentException("Invalid preamble action: " + preambleAction);
-                }
-            }
+//            switch (preambleAction) {
+//                case SKIP -> {
+//                    newStart += firstRowStart;
+//                    newEnd += firstRowStart;
+//                    newLevelsStart += firstRowStart;
+//                    newLevelsEnd += firstRowStart;
+//                }
+//                case TAKE -> {
+//                    newEnd += firstRowStart;
+//                    newLevelsEnd += firstRowStart;
+//                }
+//            }
+            // XXX: debug
+//            if (newStart != 0 || newLevelsStart != 0 || newEnd != chunkReader.numValues || newLevelsEnd != rep.length) {
+//                throw new RuntimeException();
+//            }
             return new SelectedRanges(Range.of(newStart, newEnd), Range.of(newLevelsStart, newLevelsEnd));
         }
         else {
             if (rowRange.start() > 0) {
-                for (int i = 1; i < rep.length; i++) {
+                for (int i = firstRowStart + 1; i < rep.length; i++) {
                     if (rep[i] == maxRepetitionLevel) {
                         rowsSeen++;
                         if (rowsSeen == rowRange.start()) {

@@ -13,8 +13,16 @@
  */
 package io.trino.lance.v2.reader;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public record Range(long start, long end)
 {
+    public Range
+    {
+        checkArgument(start >= 0, "start must be greater than or equal to zero");
+        checkArgument(end >= start, "end must be greater start");
+    }
+
     public static Range of(long start, long end)
     {
         return new Range(start, end);

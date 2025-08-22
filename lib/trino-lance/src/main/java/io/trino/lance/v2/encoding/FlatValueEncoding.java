@@ -141,7 +141,7 @@ public class FlatValueEncoding
         public void read(int sourceIndex, short[] destination, int destinationIndex, int length)
         {
 //            checkArgument(sourceIndex + length <= numValues);
-            slice.getShorts(sourceIndex, destination, destinationIndex, length);
+            slice.getShorts(sourceIndex * Short.BYTES, destination, destinationIndex, length);
         }
     }
 
@@ -165,7 +165,7 @@ public class FlatValueEncoding
         public void read(int sourceIndex, int[] destination, int destinationIndex, int length)
         {
 //            checkArgument(sourceIndex + length <= numValues);
-            slice.getInts(sourceIndex, destination, destinationIndex, length);
+            slice.getInts(sourceIndex * Integer.BYTES, destination, destinationIndex, length);
         }
     }
 
@@ -189,7 +189,7 @@ public class FlatValueEncoding
         public void read(int sourceIndex, long[] destination, int destinationIndex, int length)
         {
 //            checkArgument(sourceIndex + length <= numValues);
-            slice.getLongs(sourceIndex, destination, destinationIndex, length);
+            slice.getLongs(sourceIndex * Long.BYTES, destination, destinationIndex, length);
         }
     }
 }
