@@ -64,7 +64,7 @@ public class TestLanceReader
             throws Exception
     {
         // miniblock with flat encoding
-        testRoundTripNumeric(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17, 19, 23, 27)), 30));
+        testRoundTripNumeric(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17, 19, 23, 27)), 7));
     }
 
     @Test

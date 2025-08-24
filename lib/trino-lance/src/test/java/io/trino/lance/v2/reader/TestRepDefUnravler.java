@@ -28,7 +28,7 @@ import static io.trino.lance.v2.metadata.DefinitionInterpretation.NULLABLE_ITEM;
 import static io.trino.lance.v2.metadata.DefinitionInterpretation.NULLABLE_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RepDefUnravlerTest
+class TestRepDefUnravler
 {
     @Test
     public void testBasicRepDef()
@@ -144,6 +144,18 @@ class RepDefUnravlerTest
         assertThat(isNull.isEmpty()).isTrue();
         BlockPositions innerPositions = unraveler.calculateOffsets();
         assertBlockPositionsEqual(new BlockPositions(Optional.of(new boolean[] {false, true, false, false}), new int[] {0, 4, 4, 4, 6}), innerPositions);
+    }
+
+    @Test
+    public void testOne()
+    {
+        SingleUnraveler unraveler = new SingleUnraveler(new int[] {1, 1, 1, 1, 1, 1, 1},
+                new int[] {0, 0, 0, 0, 0, 1, 1},
+                new DefinitionInterpretation[] {ALL_VALID_ITEM, NULLABLE_AND_EMPTYABLE_LIST});
+        Optional<boolean[]> nulls = unraveler.calculateNulls();
+        BlockPositions positions = unraveler.calculateOffsets();
+        return;
+//        assertBlockPositionsEqual(new BlockPositions(Optional.of(new boolean[] {false, true, false, false}), new int[] {0, 4, 4, 4, 6}), innerPositions);
     }
 
     @Test

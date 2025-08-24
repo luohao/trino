@@ -37,4 +37,17 @@ public record Range(long start, long end)
     {
         return new Range(start, end);
     }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Range other = (Range) obj;
+        return start == other.start && end == other.end;
+    }
 }

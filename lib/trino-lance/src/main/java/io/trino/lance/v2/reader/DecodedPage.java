@@ -37,9 +37,4 @@ public class DecodedPage
     {
         return unraveler;
     }
-
-    public int getNumRows()
-    {
-        return block.getPositionCount();
-    }
 }

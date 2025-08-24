@@ -194,7 +194,8 @@ public class PrimitiveColumnReader
             // TODO: should we use a value buffer to hold partial result
             DecodedPage decodedPage = pageReader.decodeRanges(builder.build());
             decodedPages.add(decodedPage);
-            rowCount += decodedPage.getNumRows();
+            long numRowsRead = nextBatchSize - rowCount - remaining;
+            rowCount += numRowsRead;
             if (pageOffset >= currentPage.numRows()) {
                 globalRowOffset += currentPage.numRows();
                 advancePage();
@@ -211,7 +212,7 @@ public class PrimitiveColumnReader
                         blockBuilder.appendNull();
                     }
                     else {
-                        type.appendTo(block, blockBuilder.getPositionCount(), blockBuilder);
+                        type.appendTo(block, i, blockBuilder);
                     }
                 }
                 unravelers.add(decodedPage.getUnraveler());

@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static io.trino.spi.type.DoubleType.DOUBLE;
 import static java.nio.file.Files.createTempDirectory;
 
@@ -208,7 +209,8 @@ class LanceReaderTest
 
         // Step 2: Create test data
         // Each element is a list of bigint values
-        List<?> values = ImmutableList.of(ImmutableList.of(1L, 2L, 3L),      // First row: [1, 2, 3]
+        List<?> values = newArrayList(ImmutableList.of(1L, 2L, 3L),      // First row: [1, 2, 3]
+                null,
                 ImmutableList.of(1L, 2L, 3L),         // Second row: [10, 20]
                 ImmutableList.of(1L, 2L, 3L));  // Third row: [100, 200, 300, 400]
 
@@ -219,7 +221,7 @@ class LanceReaderTest
             // Create a field for bigint elements
             Field elementField = new Field("element", FieldType.notNullable(new ArrowType.Int(64, true)), null);
             // Create a list field containing bigint elements
-            Field listField = new Field("list_column", FieldType.notNullable(ArrowType.List.INSTANCE), ImmutableList.of(elementField));
+            Field listField = new Field("list_column", FieldType.nullable(ArrowType.List.INSTANCE), ImmutableList.of(elementField));
 
             Schema schema = new Schema(ImmutableList.of(listField));
 
@@ -229,14 +231,18 @@ class LanceReaderTest
                 // Step 4: Get the list vector and set up the writer
                 ListVector listVector = (ListVector) root.getVector("list_column");
 
-                if (false) {
+                if (true) {
                     listVector.setInitialCapacity(values.size());
                     // Step 5: Write the data using UnionListWriter
                     UnionListWriter listWriter = listVector.getWriter();
 
                     for (int i = 0; i < values.size(); i++) {
                         List<?> listValue = (List<?>) values.get(i);
-
+                        listWriter.setPosition(i);
+                        if (listValue == null) {
+                            listWriter.writeNull();
+                            continue;
+                        }
                         // Start writing a list
                         listWriter.startList();
 
@@ -292,6 +298,17 @@ class LanceReaderTest
             List<?> listValue = (List<?>) values.get(i);
             System.out.println("Row " + i + ": " + listValue);
         }
+
+
+        BufferAllocator allocator = new RootAllocator();
+        LanceFileReader reader = LanceFileReader.open(file.getPath(), allocator);
+        try (ArrowReader batches = reader.readAll(null, null, 100)) {
+            while (batches.loadNextBatch()) {
+                VectorSchemaRoot batch = batches.getVectorSchemaRoot();
+                batch.getVector(0).getFieldBuffers().stream().forEach(arrowBuf -> System.out.println(arrowBuf.readByte()));
+            }
+        }
+
 
         // Clean up - files will be automatically cleaned up when tempDir is garbage collected
     }

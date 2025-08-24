@@ -72,11 +72,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.Iterators.cycle;
 import static com.google.common.collect.Lists.newArrayList;
 import static io.trino.type.InternalTypeManager.TESTING_TYPE_MANAGER;
 import static java.util.Collections.nCopies;
@@ -274,9 +276,9 @@ public class LanceTester
     public void testRoundTrip(Type type, List<?> readValues)
             throws Exception
     {
-//        testRoundTripType(type, true, insertNullEvery(5, readValues));
-//        testRoundTripType(type, false, readValues);
-//        testSimpleStructRoundTrip(type, readValues);
+        testRoundTripType(type, true, insertNullEvery(5, readValues));
+        testRoundTripType(type, false, readValues);
+        testSimpleStructRoundTrip(type, readValues);
         testSimpleListRoundTrip(type, readValues);
     }
 
@@ -292,20 +294,11 @@ public class LanceTester
             throws Exception
     {
         Type arrayType = arrayType(type);
-//        testRoundTripType(arrayType, false, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
-//        testRoundTripType(arrayType, true, values.stream().map(value -> ImmutableList.of(value, value, value)).collect(toList()));
+        List<?> data = values.stream().filter(Objects::nonNull).map(value -> insertNullEvery(9, nCopies(random.nextInt(MAX_LIST_SIZE), value))).collect(toImmutableList());
+//        List<?> data = values.stream().filter(Objects::nonNull).map(value -> nCopies(1, value)).collect(toImmutableList());
 
-//        testRoundTripType(arrayType, false, values.stream().map(value -> nCopies(random.nextInt(MAX_LIST_SIZE), value)).collect(toImmutableList()));
-
-        List<List<?>> data = IntStream.range(0, values.size())
-//                .mapToObj(i -> nCopies(random.nextInt(256), values.get(i)))
-                .mapToObj(i -> nCopies(i % 256, values.get(i)))
-                .collect(toList());
         testRoundTripType(arrayType, false, data);
-
-        // FIXME: do variable list size
-//        testRoundTripType(arrayType, false, values.stream().map(value -> nCopies(random.nextInt(0, MAX_LIST_SIZE), value)).collect(toImmutableList()));
-//        testRoundTripType(arrayType, true, insertNullEvery(9, values.stream().map(value -> cycle(ImmutableList.of(value), random.nextLong(0, MAX_LIST_SIZE))).collect(toList())));
+        testRoundTripType(arrayType, true, insertNullEvery(7, data));
     }
 
     private void testSimpleStructRoundTrip(Type type, List<?> values)
@@ -662,7 +655,13 @@ public class LanceTester
         Field elementField = field.getChildren().getFirst();
         vector.setInitialCapacity(data.size());
         UnionListWriter writer = vector.getWriter();
-        for (Object list : data) {
+        for (int i = 0; i < data.size(); i++) {
+            Object list = data.get(i);
+            writer.setPosition(i);
+            if (list == null) {
+                writer.writeNull();
+                continue;
+            }
             writer.startList();
             for (Object value : (List<?>) list) {
                 if (value == null) {
