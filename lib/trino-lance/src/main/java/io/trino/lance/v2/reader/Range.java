@@ -13,6 +13,8 @@
  */
 package io.trino.lance.v2.reader;
 
+import java.util.Objects;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 public record Range(long start, long end)
@@ -36,6 +38,12 @@ public record Range(long start, long end)
     public Range clone()
     {
         return new Range(start, end);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(start, end);
     }
 
     @Override

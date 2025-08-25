@@ -299,7 +299,6 @@ class LanceReaderTest
             System.out.println("Row " + i + ": " + listValue);
         }
 
-
         BufferAllocator allocator = new RootAllocator();
         LanceFileReader reader = LanceFileReader.open(file.getPath(), allocator);
         try (ArrowReader batches = reader.readAll(null, null, 100)) {
@@ -308,7 +307,6 @@ class LanceReaderTest
                 batch.getVector(0).getFieldBuffers().stream().forEach(arrowBuf -> System.out.println(arrowBuf.readByte()));
             }
         }
-
 
         // Clean up - files will be automatically cleaned up when tempDir is garbage collected
     }

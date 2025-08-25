@@ -62,7 +62,7 @@ import "google/protobuf/empty.proto";
 //       working with SIMD operations.  4096-byte alignment is common when
 //       working with direct I/O.  In order to ensure these buffers are aligned
 //       writers may need to insert padding before the buffers.
-//       
+//
 //       If direct I/O is required then most (but not all) fields described
 //       below must be sector aligned.  We have marked these fields with an
 //       asterisk for clarity.  Readers should assume there will be optional
@@ -137,25 +137,25 @@ import "google/protobuf/empty.proto";
 // columns, where many pages have the exact same encoding, it can be useful
 // to cut down on the size of the metadata by using a deferred encoding.
 message DeferredEncoding {
-  // Location of the buffer containing the encoding.
-  //
-  // * If sharing encodings across columns then this will be in a global buffer
-  // * If sharing encodings across pages within a column this could be in a
-  //   column metadata buffer.
-  // * This could also be a page buffer if the encoding is not shared, needs
-  //   to be written before the file ends, and the encoding is too large to load
-  //   unless we first determine the page needs to be read.  This combination
-  //   seems unusual.
-  uint64 buffer_location = 1;
-  uint64 buffer_length = 2;
+    // Location of the buffer containing the encoding.
+    //
+    // * If sharing encodings across columns then this will be in a global buffer
+    // * If sharing encodings across pages within a column this could be in a
+    //   column metadata buffer.
+    // * This could also be a page buffer if the encoding is not shared, needs
+    //   to be written before the file ends, and the encoding is too large to load
+    //   unless we first determine the page needs to be read.  This combination
+    //   seems unusual.
+    uint64 buffer_location = 1;
+    uint64 buffer_length = 2;
 }
 
 // The encoding is placed directly in the metadata section
 message DirectEncoding {
-  // The bytes that make up the encoding embedded directly in the metadata
-  //
-  // This is the most common approach.
-  bytes encoding = 1;
+    // The bytes that make up the encoding embedded directly in the metadata
+    //
+    // This is the most common approach.
+    bytes encoding = 1;
 }
 
 // An encoding stores the information needed to decode a column or page
@@ -165,14 +165,14 @@ message DirectEncoding {
 //
 // At the column level it can be used to wrap columns with dictionaries or statistics.
 message Encoding {
-  oneof location {
-    // The encoding is stored elsewhere and not part of this protobuf message
-    DeferredEncoding indirect = 1;
-    // The encoding is stored within this protobuf message
-    DirectEncoding direct = 2;
-    // There is no encoding information
-    google.protobuf.Empty none = 3;
-  }
+    oneof location {
+        // The encoding is stored elsewhere and not part of this protobuf message
+        DeferredEncoding indirect = 1;
+        // The encoding is stored within this protobuf message
+        DirectEncoding direct = 2;
+        // There is no encoding information
+        google.protobuf.Empty none = 3;
+    }
 }
 
 // ## Metadata
@@ -181,44 +181,44 @@ message Encoding {
 // These may be read individually to allow for column projection.
 message ColumnMetadata {
 
-  // This describes a page of column data.
-  message Page {
-    // The file offsets for each of the page buffers
+    // This describes a page of column data.
+    message Page {
+        // The file offsets for each of the page buffers
+        //
+        // The number of buffers is variable and depends on the encoding.  There
+        // may be zero buffers (e.g. constant encoded data) in which case this
+        // could be empty.
+        repeated uint64 buffer_offsets = 1;
+        // The size (in bytes) of each of the page buffers
+        //
+        // This field will have the same length as `buffer_offsets` and
+        // may be empty.
+        repeated uint64 buffer_sizes = 2;
+        // Logical length (e.g. # rows) of the page
+        uint64 length = 3;
+        // The encoding used to encode the page
+        Encoding encoding = 4;
+        // The priority of the page
+        //
+        // For tabular data this will be the top-level row number of the first row
+        // in the page (and top-level rows should not split across pages).
+        uint64 priority = 5;
+    }
+    // Encoding information about the column itself.  This typically describes
+    // how to interpret the column metadata buffers.  For example, it could
+    // describe how statistics or dictionaries are stored in the column metadata.
+    Encoding encoding = 1;
+    // The pages in the column
+    repeated Page pages = 2;
+    // The file offsets of each of the column metadata buffers
     //
-    // The number of buffers is variable and depends on the encoding.  There
-    // may be zero buffers (e.g. constant encoded data) in which case this
-    // could be empty.
-    repeated uint64 buffer_offsets = 1;
-    // The size (in bytes) of each of the page buffers
+    // There may be zero buffers.
+    repeated uint64 buffer_offsets = 3;
+    // The size (in bytes) of each of the column metadata buffers
     //
     // This field will have the same length as `buffer_offsets` and
     // may be empty.
-    repeated uint64 buffer_sizes = 2;
-    // Logical length (e.g. # rows) of the page
-    uint64 length = 3;
-    // The encoding used to encode the page
-    Encoding encoding = 4;
-    // The priority of the page
-    //
-    // For tabular data this will be the top-level row number of the first row
-    // in the page (and top-level rows should not split across pages).
-    uint64 priority = 5;
-  }
-  // Encoding information about the column itself.  This typically describes
-  // how to interpret the column metadata buffers.  For example, it could
-  // describe how statistics or dictionaries are stored in the column metadata.
-  Encoding encoding = 1;
-  // The pages in the column
-  repeated Page pages = 2;
-  // The file offsets of each of the column metadata buffers
-  //
-  // There may be zero buffers.
-  repeated uint64 buffer_offsets = 3;
-  // The size (in bytes) of each of the column metadata buffers
-  //
-  // This field will have the same length as `buffer_offsets` and
-  // may be empty.
-  repeated uint64 buffer_sizes = 4;
+    repeated uint64 buffer_sizes = 4;
 } // Metadata-End
 
 // ## Where is the rest?

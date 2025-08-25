@@ -13,7 +13,6 @@
  */
 package io.trino.lance.v2.reader;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
 import io.trino.lance.LanceDataSource;
@@ -484,7 +483,14 @@ public class MiniBlockPageReader
         TAKE, SKIP, ABSENT
     }
 
-    public record SelectedRanges(Range itemRange, Range levelRange) {
+    public record SelectedRanges(Range itemRange, Range levelRange)
+    {
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(itemRange, levelRange);
+        }
+
         @Override
         public boolean equals(Object obj)
         {
