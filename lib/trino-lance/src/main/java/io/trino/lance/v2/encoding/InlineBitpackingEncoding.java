@@ -13,11 +13,11 @@
  */
 package io.trino.lance.v2.encoding;
 
+import com.github.luohao.fastlanes.bitpack.VectorBytePacker;
+import com.github.luohao.fastlanes.bitpack.VectorIntegerPacker;
+import com.github.luohao.fastlanes.bitpack.VectorLongPacker;
+import com.github.luohao.fastlanes.bitpack.VectorShortPacker;
 import io.airlift.slice.Slice;
-import io.trino.lance.v2.encoding.fastlanes.ByteUnpacker;
-import io.trino.lance.v2.encoding.fastlanes.IntUnpacker;
-import io.trino.lance.v2.encoding.fastlanes.LongUnpacker;
-import io.trino.lance.v2.encoding.fastlanes.ShortUnpacker;
 import io.trino.lance.v2.reader.BufferAdapter;
 import io.trino.spi.block.ByteArrayBlock;
 import io.trino.spi.block.IntArrayBlock;
@@ -92,28 +92,28 @@ public class InlineBitpackingEncoding
                 int bitWidth = slice.getUnsignedByte(0);
                 byte[] input = slice.getBytes(1, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth);
                 byte[] output = new byte[MAX_ELEMENTS_PER_CHUNK];
-                ByteUnpacker.unpack(input, bitWidth, output);
+                VectorBytePacker.unpack(input, bitWidth, output);
                 yield new ByteArrayBlock(count, Optional.empty(), output);
             }
             case 16 -> {
                 int bitWidth = slice.getUnsignedShort(0);
                 short[] input = slice.getShorts(2, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth);
                 short[] output = new short[MAX_ELEMENTS_PER_CHUNK];
-                ShortUnpacker.unpack(input, bitWidth, output);
+                VectorShortPacker.unpack(input, bitWidth, output);
                 yield new ShortArrayBlock(count, Optional.empty(), output);
             }
             case 32 -> {
                 long bitWidth = slice.getUnsignedInt(0);
                 int[] input = slice.getInts(4, toIntExact(MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth));
                 int[] output = new int[MAX_ELEMENTS_PER_CHUNK];
-                IntUnpacker.unpack(input, toIntExact(bitWidth), output);
+                VectorIntegerPacker.unpack(input, toIntExact(bitWidth), output);
                 yield new IntArrayBlock(count, Optional.empty(), output);
             }
             case 64 -> {
                 long bitWidth = slice.getLong(0);
                 long[] input = slice.getLongs(8, toIntExact(MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth));
                 long[] output = new long[MAX_ELEMENTS_PER_CHUNK];
-                LongUnpacker.unpack(input, toIntExact(bitWidth), output);
+                VectorLongPacker.unpack(input, toIntExact(bitWidth), output);
                 yield new LongArrayBlock(count, Optional.empty(), output);
             }
             default -> throw new IllegalStateException("Unexpected uncompressedBitWidth: " + uncompressedBitWidth);
@@ -140,7 +140,7 @@ public class InlineBitpackingEncoding
             this.slice = slices.get(0);
             this.numValues = numValues;
             int bitWidth = slice.getUnsignedByte(0);
-            ByteUnpacker.unpack(slice.getBytes(1, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
+            VectorBytePacker.unpack(slice.getBytes(1, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
         }
 
         @Override
@@ -166,7 +166,7 @@ public class InlineBitpackingEncoding
             this.slice = slices.get(0);
             this.numValues = numValues;
             int bitWidth = slice.getUnsignedShort(0);
-            ShortUnpacker.unpack(slice.getShorts(2, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
+            VectorShortPacker.unpack(slice.getShorts(2, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
         }
 
         @Override
@@ -191,7 +191,7 @@ public class InlineBitpackingEncoding
             this.slice = slices.get(0);
             this.numValues = numValues;
             int bitWidth = slice.getUnsignedByte(0);
-            IntUnpacker.unpack(slice.getInts(4, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
+            VectorIntegerPacker.unpack(slice.getInts(4, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
         }
 
         @Override
@@ -216,7 +216,7 @@ public class InlineBitpackingEncoding
             this.slice = slices.get(0);
             this.numValues = numValues;
             long bitWidth = slice.getLong(0);
-            LongUnpacker.unpack(slice.getLongs(8, toIntExact(MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth)), toIntExact(bitWidth), data);
+            VectorLongPacker.unpack(slice.getLongs(8, toIntExact(MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth)), toIntExact(bitWidth), data);
         }
 
         @Override
