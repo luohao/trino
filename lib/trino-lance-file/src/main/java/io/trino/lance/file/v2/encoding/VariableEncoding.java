@@ -16,6 +16,7 @@ package io.trino.lance.file.v2.encoding;
 import io.airlift.slice.Slice;
 import io.trino.lance.file.v2.reader.BinaryBuffer;
 import io.trino.lance.file.v2.reader.BufferAdapter;
+import io.trino.spi.TrinoException;
 import io.trino.spi.block.ValueBlock;
 import io.trino.spi.block.VariableWidthBlock;
 
@@ -63,13 +64,21 @@ public class VariableEncoding
         if (count == 0) {
             return new VariableWidthBlock(0, EMPTY_SLICE, new int[1], Optional.empty());
         }
-        long numValues = slice.getUnsignedInt(0);
-        checkArgument(numValues == count);
-        long bytesStartOffset = slice.getUnsignedInt(4);
-        checkArgument(bytesStartOffset == (long) Integer.BYTES * (count + 1) + 8);
-        int[] offsets = slice.getInts(8, count + 1);
-        Slice data = slice.slice(toIntExact(bytesStartOffset), toIntExact(slice.length() - bytesStartOffset));
-        return new VariableWidthBlock(count, data, offsets, Optional.empty());
+
+        // The first byte contains bytes_per_offset info
+        short bits_per_offset = slice.getUnsignedByte(0);
+        return switch (bits_per_offset) {
+            case 32 -> {
+                long numValues = slice.getUnsignedInt(1);
+                checkArgument(numValues == count);
+                long bytesStartOffset = slice.getUnsignedInt(5);
+                checkArgument(bytesStartOffset == (long) Integer.BYTES * (count + 1) + 9);
+                int[] offsets = slice.getInts(9, count + 1);
+                Slice data = slice.slice(toIntExact(bytesStartOffset), toIntExact(slice.length() - bytesStartOffset));
+                yield new VariableWidthBlock(count, data, offsets, Optional.empty());
+            }
+            default -> throw new UnsupportedOperationException("Unsupported bits per offset: " + bits_per_offset);
+        };
     }
 
     public class VariableBinaryDecoder

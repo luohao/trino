@@ -31,6 +31,7 @@ public interface LanceEncoding
             case INLINE_BITPACKING -> new InlineBitpackingEncoding(toIntExact(proto.getInlineBitpacking().getUncompressedBitsPerValue()));
             case VARIABLE -> new VariableEncoding();
             case FIXED_SIZE_LIST -> new FixedSizeListEncoding();
+            case RLE -> RunLengthEncoding.from(proto.getRle());
             default -> throw new IllegalArgumentException("Invalid encoding: " + proto.getCompressionCase());
         };
     }

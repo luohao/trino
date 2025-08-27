@@ -501,7 +501,7 @@ public class MiniBlockPageReader
 
             int[] bufferSizes = new int[toIntExact(numBuffers)];
             for (int i = 0; i < numBuffers; i++) {
-                bufferSizes[i] = chunk.getUnsignedShort(offset + i * 2);
+                bufferSizes[i] = chunk.getUnsignedShort(offset);
                 offset += 2;
             }
             offset += padding(offset);
@@ -539,7 +539,6 @@ public class MiniBlockPageReader
 
         public void readValues(int offset, int count)
         {
-//            checkArgument(offset + count <= numValues);
             T output = bufferAdapter.createBuffer(count);
             valueDecoder.read(offset, output, 0, count);
             valuesBuffer.append(output);

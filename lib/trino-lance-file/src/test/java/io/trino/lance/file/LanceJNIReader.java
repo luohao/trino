@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.lance.file.v2;
+package io.trino.lance.file;
 
 import com.lancedb.lance.file.LanceFileReader;
 import io.airlift.slice.Slice;

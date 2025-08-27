@@ -9,7 +9,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>trino-lance</artifactId>
+    <artifactId>trino-lance-file</artifactId>
     <description>Trino - Lance file format support</description>
 
     <properties>

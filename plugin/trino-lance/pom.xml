@@ -9,7 +9,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>trino-lancedb</artifactId>
+    <artifactId>trino-lance</artifactId>
     <packaging>trino-plugin</packaging>
     <description>Trino - Lance table connector</description>
 
@@ -52,7 +52,7 @@
 
         <dependency>
             <groupId>io.trino</groupId>
-            <artifactId>trino-lance</artifactId>
+            <artifactId>trino-lance-file</artifactId>
         </dependency>
 
         <dependency>

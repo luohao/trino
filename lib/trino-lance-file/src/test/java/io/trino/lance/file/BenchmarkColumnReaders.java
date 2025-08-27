@@ -11,12 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.lance.file.v2;
+package io.trino.lance.file;
 
 import com.google.common.collect.ImmutableList;
-import io.trino.lance.file.FileLanceDataSource;
-import io.trino.lance.file.LanceDataSource;
-import io.trino.lance.file.LanceReader;
 import io.trino.spi.block.Block;
 import io.trino.spi.connector.SourcePage;
 import io.trino.spi.type.Type;
