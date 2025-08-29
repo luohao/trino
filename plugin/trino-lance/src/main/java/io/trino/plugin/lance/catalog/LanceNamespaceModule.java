@@ -13,7 +13,18 @@
  */
 package io.trino.plugin.lance.catalog;
 
-public enum NamespaceType
+import com.google.inject.Binder;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
+import io.trino.plugin.lance.catalog.namespace.DirectoryNamespaceModule;
+
+public class LanceNamespaceModule
+        extends AbstractConfigurationAwareModule
 {
-    FILE_SYSTEM;
+    @Override
+    protected void setup(Binder binder)
+    {
+        install(switch (buildConfigObject(NamespaceTypeConfig.class).getNamespaceType()) {
+            case DIRECTORY -> new DirectoryNamespaceModule();
+        });
+    }
 }

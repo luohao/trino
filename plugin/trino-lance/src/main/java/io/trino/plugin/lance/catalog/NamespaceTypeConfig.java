@@ -11,39 +11,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.lance;
+package io.trino.plugin.lance.catalog;
 
 import io.airlift.configuration.Config;
-import io.trino.plugin.lance.catalog.NamespaceType;
 import jakarta.validation.constraints.NotNull;
 
-public class LanceConfig
+public class NamespaceTypeConfig
 {
+    public enum NamespaceType
+    {
+        DIRECTORY;
+    }
+
     private NamespaceType namespaceType;
-    private String warehouseLocation;
 
     @NotNull
-    public NamespaceType getCatalogType()
+    public NamespaceType getNamespaceType()
     {
         return namespaceType;
     }
 
-    @Config("lance.catalog.type")
-    public LanceConfig setCatalogType(NamespaceType namespaceType)
+    @Config("lance.namespace.type")
+    public NamespaceTypeConfig setNamespaceType(NamespaceTypeConfig.NamespaceType namespaceType)
     {
         this.namespaceType = namespaceType;
-        return this;
-    }
-
-    public String getWarehouseLocation()
-    {
-        return warehouseLocation;
-    }
-
-    @Config("lance.catalog.warehouse.location")
-    public LanceConfig setWarehouseLocation(String warehouseLocation)
-    {
-        this.warehouseLocation = warehouseLocation;
         return this;
     }
 }

@@ -11,14 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.lance.catalog;
+package io.trino.plugin.lance.catalog.namespace;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.trino.filesystem.Location;
 import io.trino.filesystem.TrinoFileSystem;
 import io.trino.filesystem.TrinoFileSystemFactory;
-import io.trino.plugin.lance.LanceConfig;
+import io.trino.plugin.lance.catalog.BaseTable;
+import io.trino.plugin.lance.catalog.TrinoCatalog;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.SchemaTableName;
 
@@ -31,17 +32,15 @@ import static com.google.common.base.Verify.verify;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-public class DirectoryCatalog
+public class DirectoryNamespace
         implements TrinoCatalog
 {
     public static final String DEFAULT_NAMESPACE = "default";
-    // FIXME: move this to a more appropriate package
-    public static final String LANCE_SUFFIX = ".lance";
     private final TrinoFileSystemFactory fileSystemFactory;
     private final String warehouseLocation;
 
     @Inject
-    public DirectoryCatalog(TrinoFileSystemFactory fileSystemFactory, LanceConfig config)
+    public DirectoryNamespace(TrinoFileSystemFactory fileSystemFactory, DirectoryNamespaceConfig config)
     {
         this.fileSystemFactory = requireNonNull(fileSystemFactory, "fileSystemFactory is null");
         this.warehouseLocation = requireNonNull(config.getWarehouseLocation(), "warehouseLocation config is not set");
@@ -75,8 +74,8 @@ public class DirectoryCatalog
         try {
             for (Location location : fileSystem.listDirectories(directory)) {
                 String directoryName = directoryName(directory, location);
-                if (directoryName.endsWith(LANCE_SUFFIX)) {
-                    String tableName = directoryName.substring(0, directoryName.length() - LANCE_SUFFIX.length());
+                if (directoryName.endsWith(BaseTable.LANCE_SUFFIX)) {
+                    String tableName = directoryName.substring(0, directoryName.length() - BaseTable.LANCE_SUFFIX.length());
                     builder.add(new SchemaTableName(DEFAULT_NAMESPACE, tableName));
                 }
             }
@@ -92,7 +91,7 @@ public class DirectoryCatalog
     public BaseTable loadTable(ConnectorSession session, SchemaTableName schemaTableName)
     {
         checkArgument(schemaTableName.getSchemaName().equals(DEFAULT_NAMESPACE));
-        Location tableLocation = Location.of(warehouseLocation).appendPath(schemaTableName.getTableName() + LANCE_SUFFIX);
+        Location tableLocation = Location.of(warehouseLocation).appendPath(schemaTableName.getTableName() + BaseTable.LANCE_SUFFIX);
         TrinoFileSystem fileSystem = fileSystemFactory.create(session);
         // FIXME: should validate table exists
         return new BaseTable(schemaTableName.getSchemaName(), schemaTableName.getTableName(), fileSystem, tableLocation);

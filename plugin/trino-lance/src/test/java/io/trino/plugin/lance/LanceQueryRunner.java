@@ -57,8 +57,8 @@ public class LanceQueryRunner
             DistributedQueryRunner queryRunner = super.build();
             queryRunner.installPlugin(new LancePlugin());
             queryRunner.createCatalog(LANCE_CATALOG, "lance",
-                    ImmutableMap.of("lance.catalog.type", "file_system",
-                            "lance.catalog.warehouse.location", "local:///lance/",
+                    ImmutableMap.of("lance.namespace.type", "directory",
+                            "lance.namespace.directory.warehouse.location", "local:///lance/",
                             "fs.native-local.enabled", "true",
                             "local.location", "/tmp/"));
             return queryRunner;

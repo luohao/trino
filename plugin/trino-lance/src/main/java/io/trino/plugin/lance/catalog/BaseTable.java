@@ -37,6 +37,7 @@ public class BaseTable
     // Supports only ManifestNamingScheme::V1
     public static final String VERSIONS_DIR = "_versions";
     public static final String MANIFEST_SUFFIX = ".manifest";
+    public static final String LANCE_SUFFIX = ".lance";
 
     private final String schema;
     private final String name;

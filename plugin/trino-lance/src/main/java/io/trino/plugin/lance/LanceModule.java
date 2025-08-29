@@ -14,17 +14,10 @@
 package io.trino.plugin.lance;
 
 import com.google.inject.Binder;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.trino.plugin.base.metrics.FileFormatDataSourceStats;
-import io.trino.plugin.lance.catalog.DirectoryCatalog;
-import io.trino.plugin.lance.catalog.NamespaceType;
-import io.trino.plugin.lance.catalog.TrinoCatalog;
-
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.trino.plugin.lance.catalog.NamespaceType.FILE_SYSTEM;
+import io.trino.plugin.lance.catalog.LanceNamespaceModule;
 
 public class LanceModule
         extends AbstractConfigurationAwareModule
@@ -37,15 +30,7 @@ public class LanceModule
         binder.bind(LanceSplitManager.class).in(Scopes.SINGLETON);
         binder.bind(LancePageSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(FileFormatDataSourceStats.class).in(Scopes.SINGLETON);
-        configBinder(binder).bindConfig(LanceConfig.class);
-        bindCatalogModule(FILE_SYSTEM, catalogBinder -> catalogBinder.bind(TrinoCatalog.class).to(DirectoryCatalog.class).in(Scopes.SINGLETON));
-    }
 
-    private void bindCatalogModule(NamespaceType namespaceType, Module module)
-    {
-        install(conditionalModule(
-                LanceConfig.class,
-                config -> config.getCatalogType() == namespaceType,
-                module));
+        install(new LanceNamespaceModule());
     }
 }

@@ -40,7 +40,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_BAD_DATA;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_SPLIT_ERROR;
-import static io.trino.plugin.lance.catalog.DirectoryCatalog.LANCE_SUFFIX;
+import static io.trino.plugin.lance.catalog.BaseTable.LANCE_SUFFIX;
 import static java.util.Objects.requireNonNull;
 
 public class LancePageSourceProvider
