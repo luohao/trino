@@ -24,8 +24,10 @@ import io.trino.spi.TrinoException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.util.Optional;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_INVALID_VERSION_NUMBER;
 import static java.lang.Math.toIntExact;
@@ -34,10 +36,12 @@ import static java.util.Objects.requireNonNull;
 
 public class BaseTable
 {
-    // Supports only ManifestNamingScheme::V1
     public static final String VERSIONS_DIR = "_versions";
     public static final String MANIFEST_SUFFIX = ".manifest";
     public static final String LANCE_SUFFIX = ".lance";
+    public static final String DETACHED_VERSION_PREFIX = "d";
+    public static final int MANIFEST_V2_FILE_NAME_LENGTH = 20 + MANIFEST_SUFFIX.length();
+    private static final BigInteger U64_MAX = BigInteger.valueOf(2).pow(64).subtract(BigInteger.ONE);
 
     private final String schema;
     private final String name;
@@ -55,7 +59,12 @@ public class BaseTable
 
     public static long parseManifestVersion(String fileName)
     {
-        return Long.parseLong(fileName.substring(0, fileName.length() - MANIFEST_SUFFIX.length()));
+        checkArgument(fileName.endsWith(MANIFEST_SUFFIX), "manifest file name must ends with .manifest");
+        String version = fileName.substring(0, fileName.length() - MANIFEST_SUFFIX.length());
+        if (fileName.startsWith(DETACHED_VERSION_PREFIX) || fileName.length() == MANIFEST_V2_FILE_NAME_LENGTH) {
+            return U64_MAX.subtract(new BigInteger(version)).longValueExact();
+        }
+        return Long.parseLong(version);
     }
 
     public Location getTableLocation()

@@ -53,11 +53,13 @@ public class LanceMetadata
     {
         io.trino.spi.type.Type versionType = version.getVersionType();
         return switch (version.getPointerType()) {
+            // TODO: list and search versions to do temporal time travel
             case TEMPORAL -> throw new TrinoException(NOT_SUPPORTED, "Temporal table version is not supported");
             case TARGET_ID -> {
-                if (versionType == BIGINT) {
+                if (versionType != BIGINT) {
                     throw new TrinoException(NOT_SUPPORTED, "Unsupported version type: " + versionType);
                 }
+                // TODO: support String type target id
                 yield (long) version.getVersion();
             }
         };

@@ -27,6 +27,7 @@ public class Fragment
     private final long id;
     private final List<DataFile> files;
     private final long physicalRows;
+    // TODO: support deletion files
 
     @JsonCreator
     public Fragment(
@@ -41,6 +42,9 @@ public class Fragment
 
     public static Fragment from(Table.DataFragment proto)
     {
+        if (proto.hasDeletionFile()) {
+            throw new UnsupportedOperationException("Deletion files are not supported");
+        }
         List<DataFile> files = proto.getFilesList().stream()
                 .map(DataFile::from)
                 .collect(toImmutableList());
