@@ -32,6 +32,7 @@ public interface LanceEncoding
             case VARIABLE -> new VariableEncoding();
             case FIXED_SIZE_LIST -> new FixedSizeListEncoding();
             case RLE -> RunLengthEncoding.from(proto.getRle());
+            case FSST -> FsstEncoding.fromProto(proto.getFsst());
             default -> throw new IllegalArgumentException("Invalid encoding: " + proto.getCompressionCase());
         };
     }

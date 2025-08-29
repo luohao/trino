@@ -14,10 +14,16 @@
 package io.trino.lance.file;
 
 import com.google.common.collect.ImmutableList;
+import io.trino.spi.block.Block;
+import io.trino.spi.connector.SourcePage;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.cycle;
@@ -105,12 +111,12 @@ public class TestLanceReader
     }
 
     // FIXME: implement FSST encoding
-//    @Test
-//    public void testStringSequence()
-//            throws Exception
-//    {
-//        tester.testRoundTrip(VARCHAR, newArrayList(doubleSequence(1.0, 10.01, 30_000)).stream().map(Object::toString).collect(toList()));
-//    }
+    @Test
+    public void testStringSequence()
+            throws Exception
+    {
+        tester.testRoundTrip(VARCHAR, newArrayList(doubleSequence(1.0, 10.01, 30_000)).stream().map(Object::toString).collect(toList()));
+    }
 
     @Test
     public void testStringDictionarySequence()

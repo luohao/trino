@@ -45,6 +45,7 @@ import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.trino.jmh.Benchmarks.benchmark;
 import static io.trino.spi.type.BigintType.BIGINT;
+import static io.trino.spi.type.VarcharType.VARCHAR;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.Collections.nCopies;
 import static java.util.UUID.randomUUID;
@@ -62,8 +63,26 @@ public class BenchmarkColumnReaders
 {
     public static final int ROWS = 10_000_000;
 
+//    @Benchmark
+//    public Object readBigIntJNI(BigIntBenchmarkData data)
+//            throws Exception
+//    {
+//        try (LanceJNIReader reader = data.createJNIReader()) {
+//            return readColumnJNI(reader);
+//        }
+//    }
+//
+//    @Benchmark
+//    public Object readBigInt(BigIntBenchmarkData data)
+//            throws Exception
+//    {
+//        try (LanceReader reader = data.createReader()) {
+//            return readColumn(reader);
+//        }
+//    }
+
     @Benchmark
-    public Object readBigIntJNI(BigIntBenchmarkData data)
+    public Object readVarcharJNI(VarcharBenchmarkData data)
             throws Exception
     {
         try (LanceJNIReader reader = data.createJNIReader()) {
@@ -72,7 +91,7 @@ public class BenchmarkColumnReaders
     }
 
     @Benchmark
-    public Object readBigInt(BigIntBenchmarkData data)
+    public Object readVarchar(VarcharBenchmarkData data)
             throws Exception
     {
         try (LanceReader reader = data.createReader()) {
@@ -80,41 +99,41 @@ public class BenchmarkColumnReaders
         }
     }
 
-    @Benchmark
-    public Object readListJNI(ListBenchmarkData data)
-            throws Exception
-    {
-        try (LanceJNIReader reader = data.createJNIReader()) {
-            return readColumnJNI(reader);
-        }
-    }
-
-    @Benchmark
-    public Object readList(ListBenchmarkData data)
-            throws Exception
-    {
-        try (LanceReader reader = data.createReader()) {
-            return readColumn(reader);
-        }
-    }
-
-    @Benchmark
-    public Object readStructJNI(StructBenchmarkData data)
-            throws Exception
-    {
-        try (LanceJNIReader reader = data.createJNIReader()) {
-            return readColumnJNI(reader);
-        }
-    }
-
-    @Benchmark
-    public Object readStruct(StructBenchmarkData data)
-            throws Exception
-    {
-        try (LanceReader reader = data.createReader()) {
-            return readColumn(reader);
-        }
-    }
+//    @Benchmark
+//    public Object readListJNI(ListBenchmarkData data)
+//            throws Exception
+//    {
+//        try (LanceJNIReader reader = data.createJNIReader()) {
+//            return readColumnJNI(reader);
+//        }
+//    }
+//
+//    @Benchmark
+//    public Object readList(ListBenchmarkData data)
+//            throws Exception
+//    {
+//        try (LanceReader reader = data.createReader()) {
+//            return readColumn(reader);
+//        }
+//    }
+//
+//    @Benchmark
+//    public Object readStructJNI(StructBenchmarkData data)
+//            throws Exception
+//    {
+//        try (LanceJNIReader reader = data.createJNIReader()) {
+//            return readColumnJNI(reader);
+//        }
+//    }
+//
+//    @Benchmark
+//    public Object readStruct(StructBenchmarkData data)
+//            throws Exception
+//    {
+//        try (LanceReader reader = data.createReader()) {
+//            return readColumn(reader);
+//        }
+//    }
 
     private Object readColumn(LanceReader reader)
             throws IOException
@@ -229,6 +248,34 @@ public class BenchmarkColumnReaders
             return values.iterator();
         }
     }
+
+    @State(Thread)
+    public static class VarcharBenchmarkData
+            extends BenchmarkData
+    {
+        @Setup
+        public void setup()
+                throws Exception
+        {
+            setup(VARCHAR, createValues(), true);
+        }
+
+        private Iterator<?> createValues()
+        {
+            List<String> values = new ArrayList<>();
+            for (int i = 0; i < ROWS; ++i) {
+                long value = ThreadLocalRandom.current().nextLong();
+                if (value % 7 == 0) {
+                    values.add(null);
+                }
+                else {
+                    values.add(Long.toString(value));
+                }
+            }
+            return values.iterator();
+        }
+    }
+
 
     public abstract static class BenchmarkData
     {

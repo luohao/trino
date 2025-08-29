@@ -50,6 +50,11 @@ public class BinaryBuffer
         offsets[offset + 1] = offsets[offset] + slice.length();
     }
 
+    public Slice get(int index)
+    {
+        return chunks.get(index);
+    }
+
     public void addChunk(Slice slice)
     {
         chunks.add(slice);
