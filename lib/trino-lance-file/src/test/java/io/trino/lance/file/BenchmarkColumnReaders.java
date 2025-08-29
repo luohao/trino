@@ -63,23 +63,23 @@ public class BenchmarkColumnReaders
 {
     public static final int ROWS = 10_000_000;
 
-//    @Benchmark
-//    public Object readBigIntJNI(BigIntBenchmarkData data)
-//            throws Exception
-//    {
-//        try (LanceJNIReader reader = data.createJNIReader()) {
-//            return readColumnJNI(reader);
-//        }
-//    }
-//
-//    @Benchmark
-//    public Object readBigInt(BigIntBenchmarkData data)
-//            throws Exception
-//    {
-//        try (LanceReader reader = data.createReader()) {
-//            return readColumn(reader);
-//        }
-//    }
+    @Benchmark
+    public Object readBigIntJNI(BigIntBenchmarkData data)
+            throws Exception
+    {
+        try (LanceJNIReader reader = data.createJNIReader()) {
+            return readColumnJNI(reader);
+        }
+    }
+
+    @Benchmark
+    public Object readBigInt(BigIntBenchmarkData data)
+            throws Exception
+    {
+        try (LanceReader reader = data.createReader()) {
+            return readColumn(reader);
+        }
+    }
 
     @Benchmark
     public Object readVarcharJNI(VarcharBenchmarkData data)
@@ -99,41 +99,41 @@ public class BenchmarkColumnReaders
         }
     }
 
-//    @Benchmark
-//    public Object readListJNI(ListBenchmarkData data)
-//            throws Exception
-//    {
-//        try (LanceJNIReader reader = data.createJNIReader()) {
-//            return readColumnJNI(reader);
-//        }
-//    }
-//
-//    @Benchmark
-//    public Object readList(ListBenchmarkData data)
-//            throws Exception
-//    {
-//        try (LanceReader reader = data.createReader()) {
-//            return readColumn(reader);
-//        }
-//    }
-//
-//    @Benchmark
-//    public Object readStructJNI(StructBenchmarkData data)
-//            throws Exception
-//    {
-//        try (LanceJNIReader reader = data.createJNIReader()) {
-//            return readColumnJNI(reader);
-//        }
-//    }
-//
-//    @Benchmark
-//    public Object readStruct(StructBenchmarkData data)
-//            throws Exception
-//    {
-//        try (LanceReader reader = data.createReader()) {
-//            return readColumn(reader);
-//        }
-//    }
+    @Benchmark
+    public Object readListJNI(ListBenchmarkData data)
+            throws Exception
+    {
+        try (LanceJNIReader reader = data.createJNIReader()) {
+            return readColumnJNI(reader);
+        }
+    }
+
+    @Benchmark
+    public Object readList(ListBenchmarkData data)
+            throws Exception
+    {
+        try (LanceReader reader = data.createReader()) {
+            return readColumn(reader);
+        }
+    }
+
+    @Benchmark
+    public Object readStructJNI(StructBenchmarkData data)
+            throws Exception
+    {
+        try (LanceJNIReader reader = data.createJNIReader()) {
+            return readColumnJNI(reader);
+        }
+    }
+
+    @Benchmark
+    public Object readStruct(StructBenchmarkData data)
+            throws Exception
+    {
+        try (LanceReader reader = data.createReader()) {
+            return readColumn(reader);
+        }
+    }
 
     private Object readColumn(LanceReader reader)
             throws IOException
