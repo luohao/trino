@@ -85,7 +85,7 @@ public class LanceMetadata
             Optional<ConnectorTableVersion> endVersion)
     {
         if (startVersion.isPresent()) {
-            throw new TrinoException(NOT_SUPPORTED, "Read table with start version is not supported");
+            throw new TrinoException(NOT_SUPPORTED, "Read table with startRowPosition version is not supported");
         }
         BaseTable baseTable = catalog.loadTable(session, tableName);
         Optional<Long> version;

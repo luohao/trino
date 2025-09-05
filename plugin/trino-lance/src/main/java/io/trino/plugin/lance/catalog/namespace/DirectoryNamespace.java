@@ -53,7 +53,7 @@ public class DirectoryNamespace
             prefix += "/";
         }
         String path = location.path();
-        verify(path.endsWith("/"), "path does not end with slash: %s", location);
+        verify(path.endsWith("/"), "path does not endRowPosition with slash: %s", location);
         verify(path.startsWith(prefix), "path [%s] is not a child of directory [%s]", location, directory);
         return path.substring(prefix.length(), path.length() - 1);
     }

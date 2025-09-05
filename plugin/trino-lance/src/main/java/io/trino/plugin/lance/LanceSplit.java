@@ -13,9 +13,10 @@
  */
 package io.trino.plugin.lance;
 
+import io.trino.plugin.lance.metadata.Fragment;
 import io.trino.spi.connector.ConnectorSplit;
 
-public record LanceSplit(String path)
+public record LanceSplit(Fragment fragment, long startRowPosition, long endRowPosition)
         implements ConnectorSplit
 {
 }

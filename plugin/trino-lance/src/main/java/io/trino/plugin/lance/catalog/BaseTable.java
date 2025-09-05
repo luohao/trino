@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class BaseTable
 {
     public static final String VERSIONS_DIR = "_versions";
+    public static final String DATA_DIR = "data";
     public static final String MANIFEST_SUFFIX = ".manifest";
     public static final String LANCE_SUFFIX = ".lance";
     public static final String DETACHED_VERSION_PREFIX = "d";
@@ -99,7 +100,7 @@ public class BaseTable
                 String fileName = file.location().fileName();
                 checkState(
                         fileName.endsWith(MANIFEST_SUFFIX),
-                        "Manifest file [%s] does not end with .manifest",
+                        "Manifest file [%s] does not endRowPosition with .manifest",
                         file.location().toString());
                 long manifestVersion = parseManifestVersion(fileName);
                 if (version.isPresent() && manifestVersion > version.get()) {

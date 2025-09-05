@@ -13,8 +13,7 @@
  */
 package io.trino.plugin.lance;
 
-import com.google.common.collect.ImmutableList;
-import io.trino.filesystem.Location;
+import io.trino.plugin.base.classloader.ClassLoaderSafeConnectorSplitSource;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
 import io.trino.spi.connector.ConnectorSplitSource;
@@ -22,10 +21,8 @@ import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTransactionHandle;
 import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.DynamicFilter;
-import io.trino.spi.connector.FixedSplitSource;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 public class LanceSplitManager
         implements ConnectorSplitManager
@@ -40,14 +37,7 @@ public class LanceSplitManager
     {
         checkArgument(tableHandle instanceof LanceTableHandle);
         LanceTableHandle table = (LanceTableHandle) tableHandle;
-        ImmutableList<LanceSplit> splits = table.manifest().getFragments().stream()
-                .map(fragment -> {
-                    checkArgument(fragment.getFiles().size() == 1, "only support one file per fragment");
-                    String fileName = fragment.getFiles().get(0).path();
-                    Location location = Location.of(table.tablePath()).appendPath("data").appendPath(fileName);
-                    return new LanceSplit(location.toString());
-                })
-                .collect(toImmutableList());
-        return new FixedSplitSource(splits);
+        LanceSplitSource splitSource = new LanceSplitSource(table.manifest().getFragments());
+        return new ClassLoaderSafeConnectorSplitSource(splitSource, LanceSplitManager.class.getClassLoader());
     }
 }

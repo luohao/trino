@@ -13,6 +13,8 @@
  */
 package io.trino.plugin.lance;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.trino.filesystem.Location;
 import io.trino.filesystem.TrinoFileSystem;
@@ -21,7 +23,9 @@ import io.trino.filesystem.TrinoInputFile;
 import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.LanceReader;
 import io.trino.lance.file.TrinoLanceDataSource;
+import io.trino.lance.file.v2.reader.Range;
 import io.trino.plugin.base.metrics.FileFormatDataSourceStats;
+import io.trino.plugin.lance.metadata.Fragment;
 import io.trino.spi.TrinoException;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ConnectorPageSource;
@@ -40,6 +44,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_BAD_DATA;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_SPLIT_ERROR;
+import static io.trino.plugin.lance.catalog.BaseTable.DATA_DIR;
 import static io.trino.plugin.lance.catalog.BaseTable.LANCE_SUFFIX;
 import static java.util.Objects.requireNonNull;
 
@@ -58,10 +63,12 @@ public class LancePageSourceProvider
         this.stats = requireNonNull(stats, "stats is null");
     }
 
-    public ConnectorPageSource createPageSource(
+    public ConnectorPageSource createFilePageSource(
             ConnectorSession session,
             Location path,
-            List<ColumnHandle> columns)
+            List<ColumnHandle> columns,
+            long start,
+            long end)
     {
         if (!path.fileName().endsWith(LANCE_SUFFIX)) {
             throw new TrinoException(LANCE_BAD_DATA, "Unsupported file suffix: path=%s".formatted(path.fileName()));
@@ -75,12 +82,25 @@ public class LancePageSourceProvider
                     .map(LanceColumnHandle.class::cast)
                     .map(LanceColumnHandle::getId)
                     .collect(toImmutableList());
-            LanceReader reader = new LanceReader(lanceDataSource, readColumnIds, Optional.empty());
+            LanceReader reader = new LanceReader(lanceDataSource, readColumnIds, Optional.of(ImmutableList.of(Range.of(start, end))));
             return new LancePageSource(reader, lanceDataSource);
         }
         catch (IOException e) {
             throw new TrinoException(LANCE_SPLIT_ERROR, e);
         }
+    }
+
+    public ConnectorPageSource createFragmentPageSource(ConnectorSession session,
+            LanceTableHandle table,
+            Fragment fragment,
+            List<ColumnHandle> columns,
+            long start,
+            long end)
+    {
+        // TODO: support multiple files in a fragment
+        checkArgument(fragment.getFiles().size() == 1, "only one file per fragment is supported");
+        Fragment.DataFile dataFile = fragment.getFiles().getFirst();
+        return createFilePageSource(session, Location.of(Joiner.on("/").join(table.tablePath(), DATA_DIR, dataFile.path())), columns, start, end);
     }
 
     @Override
@@ -94,8 +114,8 @@ public class LancePageSourceProvider
     {
         checkArgument(table instanceof LanceTableHandle);
         checkArgument(connectorSplit instanceof LanceSplit);
+        LanceTableHandle lanceTable = (LanceTableHandle) table;
         LanceSplit split = (LanceSplit) connectorSplit;
-
-        return createPageSource(session, Location.of(split.path()), columns);
+        return createFragmentPageSource(session, lanceTable, split.fragment(), columns, split.startRowPosition(), split.endRowPosition());
     }
 }
