@@ -28,6 +28,8 @@ public interface BufferAdapter<T>
 
     Block createBlock(T buffer, Optional<boolean[]> valueIsNull);
 
+    long getRetainedBytes(T buffer);
+
     default Block createDictionaryBlock(T buffer, Block dictionary, Optional<boolean[]> valueIsNull)
     {
         throw new UnsupportedOperationException();

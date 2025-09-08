@@ -42,6 +42,12 @@ public class LongArrayBufferAdapter
     }
 
     @Override
+    public long getRetainedBytes(long[] buffer)
+    {
+        return (long) buffer.length * Long.BYTES;
+    }
+
+    @Override
     protected int getLength(long[] buffer)
     {
         return buffer.length;

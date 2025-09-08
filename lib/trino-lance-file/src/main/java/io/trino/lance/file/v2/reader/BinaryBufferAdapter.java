@@ -74,4 +74,10 @@ public class BinaryBufferAdapter
     {
         return new VariableWidthBlock(buffer.getValueCount(), buffer.getSlice(), buffer.getOffsets(), valueIsNull);
     }
+
+    @Override
+    public long getRetainedBytes(BinaryBuffer buffer)
+    {
+        return buffer.getRetainedSize();
+    }
 }

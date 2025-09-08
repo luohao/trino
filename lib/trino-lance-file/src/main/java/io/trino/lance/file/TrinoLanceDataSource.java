@@ -14,7 +14,6 @@
 package io.trino.lance.file;
 
 import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
 import io.trino.filesystem.TrinoInput;
 import io.trino.filesystem.TrinoInputFile;
 import io.trino.plugin.base.metrics.FileFormatDataSourceStats;
@@ -24,71 +23,17 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 public class TrinoLanceDataSource
-        implements LanceDataSource
+        extends AbstractLanceDataSource
 {
-    private final LanceDataSourceId id;
     private final FileFormatDataSourceStats stats;
     private final TrinoInput input;
-    private final long estimatedSize;
-    private long readTimeNanos;
-    private long readBytes;
 
     public TrinoLanceDataSource(TrinoInputFile file, FileFormatDataSourceStats stats)
             throws IOException
     {
-        this.id = new LanceDataSourceId(file.location().toString());
+        super(new LanceDataSourceId(file.location().toString()), file.length());
         this.stats = requireNonNull(stats, "stats is null");
         this.input = file.newInput();
-        this.estimatedSize = file.length();
-    }
-
-    @Override
-    public LanceDataSourceId getId()
-    {
-        return id;
-    }
-
-    @Override
-    public long getReadBytes()
-    {
-        return readBytes;
-    }
-
-    @Override
-    public long getReadTimeNanos()
-    {
-        return readTimeNanos;
-    }
-
-    @Override
-    public long getEstimatedSize()
-    {
-        return estimatedSize;
-    }
-
-    @Override
-    public Slice readTail(int length)
-            throws IOException
-    {
-        long start = System.nanoTime();
-        Slice tail = input.readTail(length);
-        stats.readDataBytesPerSecond(tail.length(), System.nanoTime() - start);
-        readTimeNanos += System.nanoTime() - start;
-        readBytes += tail.length();
-        return tail;
-    }
-
-    @Override
-    public Slice readFully(long position, int length)
-            throws IOException
-    {
-        long start = System.nanoTime();
-        byte[] buffer = new byte[length];
-        input.readFully(position, buffer, 0, length);
-        stats.readDataBytesPerSecond(length, System.nanoTime() - start);
-        readTimeNanos += System.nanoTime() - start;
-        readBytes += length;
-        return Slices.wrappedBuffer(buffer);
     }
 
     @Override
@@ -96,5 +41,24 @@ public class TrinoLanceDataSource
             throws IOException
     {
         input.close();
+    }
+
+    @Override
+    protected Slice readTailInternal(int length)
+            throws IOException
+    {
+        long readStart = System.nanoTime();
+        Slice tail = input.readTail(length);
+        stats.readDataBytesPerSecond(tail.length(), System.nanoTime() - readStart);
+        return tail;
+    }
+
+    @Override
+    protected void readInternal(long position, byte[] buffer, int bufferOffset, int bufferLength)
+            throws IOException
+    {
+        long readStart = System.nanoTime();
+        input.readFully(position, buffer, bufferOffset, bufferLength);
+        stats.readDataBytesPerSecond(bufferLength, System.nanoTime() - readStart);
     }
 }

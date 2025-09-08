@@ -26,6 +26,7 @@ import io.trino.lance.file.v2.metadata.Footer;
 import io.trino.lance.file.v2.metadata.TypeUtil;
 import io.trino.lance.file.v2.reader.ColumnReader;
 import io.trino.lance.file.v2.reader.Range;
+import io.trino.memory.context.AggregatedMemoryContext;
 import io.trino.spi.Page;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.LongArrayBlock;
@@ -65,6 +66,7 @@ public class LanceReader
     private final List<Field> fields;
     private final ColumnReader[] columnReaders;
     private final long numRows;
+    private final AggregatedMemoryContext memoryUsage;
 
     private int currentPageId;
     private long currentRowId;
@@ -72,7 +74,8 @@ public class LanceReader
 
     public LanceReader(LanceDataSource dataSource,
             List<Integer> columnIds,
-            Optional<List<Range>> requestRanges)
+            Optional<List<Range>> requestRanges,
+            AggregatedMemoryContext memoryUsage)
             throws IOException
     {
         this.dataSource = requireNonNull(dataSource, "dataSource is null");
@@ -80,6 +83,7 @@ public class LanceReader
         Slice data = dataSource.readTail(FOOTER_LEN);
         this.footer = Footer.from(data);
         this.fileVersion = FileVersion.fromMajorMinor(footer.getMajorVersion(), footer.getMinorVersion());
+        this.memoryUsage = memoryUsage.newAggregatedMemoryContext();
 
         // read Global Buffer Offset Table
         Slice bufferOffsetTableSlice = dataSource.readFully(footer.getGlobalBuffOffsetStart(), footer.getNumGlobalBuffers() * BUFFER_DESCRIPTOR_SIZE);
@@ -121,7 +125,7 @@ public class LanceReader
                 .collect(toImmutableList());
 
         Map<Integer, Integer> fieldIdMap = TypeUtil.visit(fields, new TypeUtil.FieldIdToColumnIndexVisitor());
-        columnMetadata = fieldIdMap.entrySet().stream()
+        this.columnMetadata = fieldIdMap.entrySet().stream()
                 .collect(toImmutableMap(
                         Map.Entry::getKey,
                         entry -> metadata.get(entry.getValue())));
@@ -133,7 +137,8 @@ public class LanceReader
                                 dataSource,
                                 field,
                                 columnMetadata,
-                                ranges))
+                                ranges,
+                                memoryUsage))
                 .collect(toImmutableList())
                 .toArray(ColumnReader[]::new);
     }

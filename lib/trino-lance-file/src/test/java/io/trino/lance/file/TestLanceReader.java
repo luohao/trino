@@ -14,16 +14,10 @@
 package io.trino.lance.file;
 
 import com.google.common.collect.ImmutableList;
-import io.trino.spi.block.Block;
-import io.trino.spi.connector.SourcePage;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.cycle;
@@ -137,6 +131,14 @@ public class TestLanceReader
             throws Exception
     {
         tester.testRoundTrip(VARCHAR, newArrayList(nCopies(99999, "123")));
+    }
+
+    @Test
+    public void testLongList()
+            throws Exception
+    {
+        // test preamble only chunks
+        tester.testLongListRoundTrip(BIGINT, newArrayList(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17)), 10_000)).stream().map(Number::longValue).collect(toList()));
     }
 
     private void testRoundTripNumeric(Iterable<? extends Number> values)

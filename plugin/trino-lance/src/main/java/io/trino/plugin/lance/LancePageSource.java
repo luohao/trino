@@ -15,6 +15,7 @@ package io.trino.plugin.lance;
 
 import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.LanceReader;
+import io.trino.memory.context.AggregatedMemoryContext;
 import io.trino.spi.connector.ConnectorPageSource;
 import io.trino.spi.connector.SourcePage;
 
@@ -30,12 +31,16 @@ public class LancePageSource
     private final LanceDataSource dataSource;
     private boolean closed;
 
+    private final AggregatedMemoryContext memoryContext;
+
     public LancePageSource(
             LanceReader reader,
-            LanceDataSource dataSource)
+            LanceDataSource dataSource,
+            AggregatedMemoryContext memoryContext)
     {
         this.reader = requireNonNull(reader, "reader is null");
         this.dataSource = requireNonNull(dataSource, "dataSource is null");
+        this.memoryContext = requireNonNull(memoryContext, "memoryContext is null");
     }
 
     @Override
@@ -70,7 +75,7 @@ public class LancePageSource
     @Override
     public long getMemoryUsage()
     {
-        return 0;
+        return memoryContext.getBytes();
     }
 
     @Override

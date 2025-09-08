@@ -17,6 +17,8 @@ import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.v2.metadata.ColumnMetadata;
 import io.trino.lance.file.v2.metadata.Field;
 import io.trino.lance.file.v2.reader.RepetitionDefinitionUnraveler.BlockPositions;
+import io.trino.memory.context.AggregatedMemoryContext;
+import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.ArrayBlock;
 import io.trino.spi.block.Block;
 
@@ -31,17 +33,21 @@ public class ListColumnReader
 {
     private final Field field;
     private final ColumnReader childColumnReader;
+    private final LocalMemoryContext localMemoryContext;
+
     private int nextBatchSize;
 
     public ListColumnReader(LanceDataSource dataSource,
             Field field,
             Map<Integer, ColumnMetadata> columnMetadata,
-            List<Range> ranges)
+            List<Range> ranges,
+            AggregatedMemoryContext memoryContext)
     {
         requireNonNull(field, "field is null");
         checkArgument(field.getChildren().size() == 1, "list should have only one child filed");
         this.field = field;
-        this.childColumnReader = ColumnReader.createColumnReader(dataSource, field.getChildren().getFirst(), columnMetadata, ranges);
+        this.childColumnReader = ColumnReader.createColumnReader(dataSource, field.getChildren().getFirst(), columnMetadata, ranges, memoryContext);
+        this.localMemoryContext = memoryContext.newLocalMemoryContext(ListColumnReader.class.getSimpleName());
     }
 
     @Override

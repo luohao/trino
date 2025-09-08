@@ -67,6 +67,11 @@ public class DataValuesBuffer<T>
 
     public boolean isEmpty()
     {
-        return valueBuffers.size() == 0;
+        return valueBuffers.isEmpty();
+    }
+
+    public long getRetainedBytes()
+    {
+        return valueBuffers.stream().mapToLong(bufferAdapter::getRetainedBytes).sum();
     }
 }

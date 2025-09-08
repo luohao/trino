@@ -16,6 +16,8 @@ package io.trino.lance.file.v2.reader;
 import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.v2.metadata.ColumnMetadata;
 import io.trino.lance.file.v2.metadata.Field;
+import io.trino.memory.context.AggregatedMemoryContext;
+import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.RowBlock;
 
@@ -30,17 +32,18 @@ public class StructColumnReader
 {
     private final Field field;
     private final ColumnReader[] childColumnReaders;
-
+    private final LocalMemoryContext localMemoryContext;
     private int nextBatchSize;
 
-    public StructColumnReader(LanceDataSource dataSource, Field field, Map<Integer, ColumnMetadata> columnMetadata, List<Range> ranges)
+    public StructColumnReader(LanceDataSource dataSource, Field field, Map<Integer, ColumnMetadata> columnMetadata, List<Range> ranges, AggregatedMemoryContext memoryContext)
     {
         this.field = field;
         ColumnReader[] childReaders = new ColumnReader[field.getChildren().size()];
         for (int i = 0; i < childReaders.length; i++) {
-            childReaders[i] = ColumnReader.createColumnReader(dataSource, field.getChildren().get(i), columnMetadata, ranges);
+            childReaders[i] = ColumnReader.createColumnReader(dataSource, field.getChildren().get(i), columnMetadata, ranges, memoryContext);
         }
         this.childColumnReaders = childReaders;
+        this.localMemoryContext = memoryContext.newLocalMemoryContext(StructColumnReader.class.getSimpleName());
     }
 
     @Override

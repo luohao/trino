@@ -20,6 +20,8 @@ import io.trino.lance.file.v2.metadata.Field;
 import io.trino.lance.file.v2.metadata.MiniBlockLayout;
 import io.trino.lance.file.v2.metadata.PageLayout;
 import io.trino.lance.file.v2.metadata.PageMetadata;
+import io.trino.memory.context.AggregatedMemoryContext;
+import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.BlockBuilder;
 import io.trino.spi.type.Type;
@@ -40,6 +42,8 @@ public class PrimitiveColumnReader
     private final Type type;
     private final List<PageMetadata> pages;
     private final List<Range> ranges;
+    private final AggregatedMemoryContext aggregatedMemoryContext;
+    private final LocalMemoryContext localMemoryContext;
 
     private PageReader pageReader;
     private int nextBatchSize;
@@ -54,7 +58,8 @@ public class PrimitiveColumnReader
             LanceDataSource dataSource,
             Field field,
             ColumnMetadata columnMetadata,
-            List<Range> ranges)
+            List<Range> ranges,
+            AggregatedMemoryContext memoryContext)
     {
         requireNonNull(field, "field is null");
         this.dataSource = requireNonNull(dataSource, "dataSource is null");
@@ -62,6 +67,8 @@ public class PrimitiveColumnReader
         this.columnMetadata = requireNonNull(columnMetadata, "columnMetadata is null");
         this.pages = requireNonNull(columnMetadata.getPages(), "pages is null");
         this.ranges = requireNonNull(ranges, "ranges is null");
+        this.aggregatedMemoryContext = requireNonNull(memoryContext, "memoryContext is null");
+        this.localMemoryContext = requireNonNull(memoryContext, "memoryContext is null").newLocalMemoryContext(PrimitiveColumnReader.class.getSimpleName());
 
         this.globalRowOffset = 0;
         this.pageIndex = 0;
@@ -125,7 +132,6 @@ public class PrimitiveColumnReader
             if (pageReader == null) {
                 pageReader = createPageReader(currentPage);
             }
-            // TODO: should we use a value buffer to hold partial result
             DecodedPage decodedPage = pageReader.decodeRanges(builder.build());
             decodedPages.add(decodedPage);
             long numRowsRead = nextBatchSize - rowCount - remaining;
@@ -154,16 +160,16 @@ public class PrimitiveColumnReader
 
             return new DecodedPage(blockBuilder.build(), new CompositeUnraveler(unravelers));
         }
-        verify(decodedPages.size() > 0);
-        return decodedPages.get(0);
+        verify(!decodedPages.isEmpty());
+        return decodedPages.getFirst();
     }
 
     private PageReader createPageReader(PageMetadata pageMetadata)
     {
         PageLayout layout = pageMetadata.layout();
         return switch (layout) {
-            // TODO: can we optimize this by caching the page reader and provide different ranges
-            case MiniBlockLayout miniBlockLayout -> new MiniBlockPageReader(dataSource, type, miniBlockLayout, pageMetadata.bufferOffsets(), pageMetadata.numRows());
+            case MiniBlockLayout miniBlockLayout ->
+                    new MiniBlockPageReader(dataSource, type, miniBlockLayout, pageMetadata.bufferOffsets(), pageMetadata.numRows(), aggregatedMemoryContext);
             default -> throw new IllegalArgumentException("Unsupported PageLayout: " + layout);
         };
     }

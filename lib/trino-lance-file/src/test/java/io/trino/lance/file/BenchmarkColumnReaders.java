@@ -44,6 +44,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.trino.jmh.Benchmarks.benchmark;
+import static io.trino.memory.context.AggregatedMemoryContext.newSimpleAggregatedMemoryContext;
 import static io.trino.spi.type.BigintType.BIGINT;
 import static io.trino.spi.type.VarcharType.VARCHAR;
 import static java.nio.file.Files.createTempDirectory;
@@ -276,7 +277,6 @@ public class BenchmarkColumnReaders
         }
     }
 
-
     public abstract static class BenchmarkData
     {
         protected final Random random = new Random(0);
@@ -305,7 +305,7 @@ public class BenchmarkColumnReaders
         LanceReader createReader()
                 throws IOException
         {
-            return new LanceReader(dataSource, ImmutableList.of(0), Optional.empty());
+            return new LanceReader(dataSource, ImmutableList.of(0), Optional.empty(), newSimpleAggregatedMemoryContext());
         }
 
         public LanceJNIReader createJNIReader()

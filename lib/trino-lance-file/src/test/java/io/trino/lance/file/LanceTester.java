@@ -68,6 +68,7 @@ import java.util.Random;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Lists.newArrayList;
+import static io.trino.memory.context.AggregatedMemoryContext.newSimpleAggregatedMemoryContext;
 import static io.trino.type.InternalTypeManager.TESTING_TYPE_MANAGER;
 import static java.util.Collections.nCopies;
 import static java.util.stream.Collectors.toList;
@@ -136,7 +137,7 @@ public class LanceTester
             throws IOException
     {
         LanceDataSource dataSource = new FileLanceDataSource(tempFile.getFile());
-        return new LanceReader(dataSource, ImmutableList.of(0), Optional.empty());
+        return new LanceReader(dataSource, ImmutableList.of(0), Optional.empty(), newSimpleAggregatedMemoryContext());
     }
 
     public static void writeLanceColumnJNI(File outputFile, Type type, List<?> values, boolean nullable)
@@ -232,6 +233,15 @@ public class LanceTester
     {
         Type arrayType = arrayType(type);
         List<?> data = values.stream().filter(Objects::nonNull).map(value -> insertNullEvery(9, nCopies(random.nextInt(MAX_LIST_SIZE), value))).collect(toImmutableList());
+        testRoundTripType(arrayType, false, data);
+        testRoundTripType(arrayType, true, insertNullEvery(7, data));
+    }
+
+    public void testLongListRoundTrip(Type type, List<?> values)
+            throws Exception
+    {
+        Type arrayType = arrayType(type);
+        List<?> data = values.stream().filter(Objects::nonNull).map(value -> insertNullEvery(9, nCopies(random.nextInt(2048, 10000), value))).collect(toImmutableList());
         testRoundTripType(arrayType, false, data);
         testRoundTripType(arrayType, true, insertNullEvery(7, data));
     }

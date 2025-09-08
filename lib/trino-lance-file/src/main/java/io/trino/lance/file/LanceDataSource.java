@@ -29,7 +29,7 @@ public interface LanceDataSource
 
     long getEstimatedSize();
 
-    // TODO: add getRetainedSize() for memory tracking
+    long getRetainedSize();
 
     Slice readTail(int length)
             throws IOException;

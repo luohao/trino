@@ -23,6 +23,8 @@ import io.trino.lance.file.v2.metadata.DiskRange;
 import io.trino.lance.file.v2.metadata.MiniBlockLayout;
 import io.trino.lance.file.v2.metadata.RepDefLayer;
 import io.trino.lance.file.v2.reader.RepetitionIndex.RepIndexBlock;
+import io.trino.memory.context.AggregatedMemoryContext;
+import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.ValueBlock;
 import io.trino.spi.type.Type;
@@ -68,9 +70,17 @@ public class MiniBlockPageReader
     private final DataValuesBuffer valuesBuffer;
     private final DataValuesBuffer<int[]> repetitionBuffer;
     private final DataValuesBuffer<int[]> definitionBuffer;
+    // memory usage for current miniblock page
+    private final LocalMemoryContext memoryUsage;
+
     private long levelOffset;
 
-    public MiniBlockPageReader(LanceDataSource dataSource, Type type, MiniBlockLayout layout, List<DiskRange> bufferOffsets, long numRows)
+    public MiniBlockPageReader(LanceDataSource dataSource,
+            Type type,
+            MiniBlockLayout layout,
+            List<DiskRange> bufferOffsets,
+            long numRows,
+            AggregatedMemoryContext memoryContext)
     {
         this.dataSource = dataSource;
         this.type = type;
@@ -143,6 +153,8 @@ public class MiniBlockPageReader
         valuesBuffer = new DataValuesBuffer(valueBufferAdapter);
         repetitionBuffer = new DataValuesBuffer<>(INT_ARRAY_BUFFER_ADAPTER);
         definitionBuffer = new DataValuesBuffer<>(INT_ARRAY_BUFFER_ADAPTER);
+        memoryUsage = memoryContext.newLocalMemoryContext(MiniBlockPageReader.class.getSimpleName());
+
         levelOffset = 0;
     }
 
@@ -225,17 +237,24 @@ public class MiniBlockPageReader
                 else {
                     needPreamble = false;
                 }
-                // FIXME: loadChunk()
-                // FIXME: merge chunks
-                // ChunkData maps to DecodedMiniBlockChunk
                 readChunk(chunks.get(blockIndex), chunkIndexBlock, toSkip, fullRowsToTake, preambleAction, takeTrailer);
 
-                // TODO: append the data to the output buffer
                 toSkip = 0;
                 blockIndex++;
             }
         }
+        memoryUsage.setBytes(getRetainedBytes());
         return valuesBuffer.createDecodedPage(definitionBuffer.getMergedValues(), repetitionBuffer.getMergedValues(), layers, dictionaryBlock);
+    }
+
+    private long getRetainedBytes()
+    {
+        long retainedBytes = 0;
+        if (dictionaryBlock.isPresent()) {
+            retainedBytes += dictionaryBlock.get().getRetainedSizeInBytes();
+        }
+        retainedBytes += valuesBuffer.getRetainedBytes() + repetitionBuffer.getRetainedBytes() + definitionBuffer.getRetainedBytes();
+        return retainedBytes;
     }
 
     public static SelectedRanges mapRange(Range rowRange, int[] rep, int[] def, int maxRepetitionLevel, int maxVisibleDefinition, int numItems, PreambleAction preambleAction)
@@ -382,7 +401,6 @@ public class MiniBlockPageReader
         try {
             ChunkReader chunkReader = new ChunkReader(dataSource.readFully(chunk.offsetBytes(), toIntExact(chunk.chunkSizeBytes())), toIntExact(chunk.numValues()), valueBufferAdapter);
 
-            // DecodeMiniBlockTask::map_range
             SelectedRanges selectedRanges = mapRange(Range.of(rowsToSkip, rowsToSkip + rowsToTake + (takeTrailer ? 1 : 0)),
                     chunkReader.readRepetitionLevels(),
                     chunkReader.readDefinitionLevels(),
@@ -393,7 +411,6 @@ public class MiniBlockPageReader
             Range itemRange = selectedRanges.itemRange();
             Range levelRange = selectedRanges.levelRange();
 
-            // DecodeMiniBlockTask::extend_levels
             if (!repetitionEncoding.isEmpty()) {
                 if (repetitionBuffer.isEmpty() && levelOffset > 0) {
                     repetitionBuffer.append(new int[toIntExact(levelOffset)]);

@@ -59,6 +59,12 @@ public class MemoryLanceDataSource
     }
 
     @Override
+    public long getRetainedSize()
+    {
+        return data.getRetainedSize();
+    }
+
+    @Override
     public Slice readTail(int length)
             throws IOException
     {

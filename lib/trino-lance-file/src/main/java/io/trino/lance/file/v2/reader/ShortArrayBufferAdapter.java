@@ -42,6 +42,12 @@ public class ShortArrayBufferAdapter
     }
 
     @Override
+    public long getRetainedBytes(short[] buffer)
+    {
+        return (long) buffer.length * Short.BYTES;
+    }
+
+    @Override
     protected int getLength(short[] buffer)
     {
         return buffer.length;

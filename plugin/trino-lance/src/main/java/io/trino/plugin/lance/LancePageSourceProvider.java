@@ -24,6 +24,7 @@ import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.LanceReader;
 import io.trino.lance.file.TrinoLanceDataSource;
 import io.trino.lance.file.v2.reader.Range;
+import io.trino.memory.context.AggregatedMemoryContext;
 import io.trino.plugin.base.metrics.FileFormatDataSourceStats;
 import io.trino.plugin.lance.metadata.Fragment;
 import io.trino.spi.TrinoException;
@@ -42,6 +43,7 @@ import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.trino.memory.context.AggregatedMemoryContext.newSimpleAggregatedMemoryContext;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_BAD_DATA;
 import static io.trino.plugin.lance.LanceErrorCode.LANCE_SPLIT_ERROR;
 import static io.trino.plugin.lance.catalog.BaseTable.DATA_DIR;
@@ -82,8 +84,9 @@ public class LancePageSourceProvider
                     .map(LanceColumnHandle.class::cast)
                     .map(LanceColumnHandle::getId)
                     .collect(toImmutableList());
-            LanceReader reader = new LanceReader(lanceDataSource, readColumnIds, Optional.of(ImmutableList.of(Range.of(start, end))));
-            return new LancePageSource(reader, lanceDataSource);
+            AggregatedMemoryContext memoryUsage = newSimpleAggregatedMemoryContext();
+            LanceReader reader = new LanceReader(lanceDataSource, readColumnIds, Optional.of(ImmutableList.of(Range.of(start, end))), memoryUsage);
+            return new LancePageSource(reader, lanceDataSource, memoryUsage);
         }
         catch (IOException e) {
             throw new TrinoException(LANCE_SPLIT_ERROR, e);

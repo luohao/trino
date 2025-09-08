@@ -61,20 +61,20 @@ option java_package = "com.lancedb.lance.protobuf";
 // potentially adds a new level to the repetition and definition levels.  This message describes
 // the meaning of each layer.
 enum RepDefLayer {
-  // Should never be used, included for debugging purporses and general protobuf best practice
-  REPDEF_UNSPECIFIED = 0;
-  // All values are valid (can be primitive or struct)
-  REPDEF_ALL_VALID_ITEM = 1;
-  // All list values are valid
-  REPDEF_ALL_VALID_LIST = 2;
-  // There are one or more null items (can be primitive or struct)
-  REPDEF_NULLABLE_ITEM = 3;
-  // A list layer with null lists but no empty lists
-  REPDEF_NULLABLE_LIST = 4;
-  // A list layer with empty lists but no null lists
-  REPDEF_EMPTYABLE_LIST = 5;
-  // A list layer with both empty lists and null lists
-  REPDEF_NULL_AND_EMPTY_LIST = 6;
+    // Should never be used, included for debugging purporses and general protobuf best practice
+    REPDEF_UNSPECIFIED = 0;
+    // All values are valid (can be primitive or struct)
+    REPDEF_ALL_VALID_ITEM = 1;
+    // All list values are valid
+    REPDEF_ALL_VALID_LIST = 2;
+    // There are one or more null items (can be primitive or struct)
+    REPDEF_NULLABLE_ITEM = 3;
+    // A list layer with null lists but no empty lists
+    REPDEF_NULLABLE_LIST = 4;
+    // A list layer with empty lists but no null lists
+    REPDEF_EMPTYABLE_LIST = 5;
+    // A list layer with both empty lists and null lists
+    REPDEF_NULL_AND_EMPTY_LIST = 6;
 }
 
 // A layout used for pages where the data is small
@@ -87,43 +87,43 @@ enum RepDefLayer {
 // at a time) but we have more flexibility in compression and do less work per value when
 // compressing and decompressing in bulk.
 message MiniBlockLayout {
-  // Description of the compression of repetition levels (e.g. how many bits per rep)
-  //
-  // Optional, if there is no repetition then this field is not present
-  CompressiveEncoding rep_compression = 1;
-  // Description of the compression of definition levels (e.g. how many bits per def)
-  //
-  // Optional, if there is no definition then this field is not present
-  CompressiveEncoding def_compression = 2;
-  // Description of the compression of values
-  CompressiveEncoding value_compression = 3;
-  // Description of the compression of the dictionary data
-  //
-  // Optional, if there is no dictionary then this field is not present
-  CompressiveEncoding dictionary = 4;
-  // Number of items in the dictionary
-  uint64 num_dictionary_items = 5;
-  // The meaning of each repdef layer, used to interpret repdef buffers correctly
-  repeated RepDefLayer layers = 6;
-  // The number of buffers in each mini-block, this is determined by the compression and does
-  // NOT include the repetition or definition buffers (the presence of these buffers can be determined
-  // by looking at the rep_compression and def_compression fields)
-  uint64 num_buffers = 7;
-  // The depth of the repetition index.
-  //
-  // If there is repetition then the depth must be at least 1.  If there are many layers
-  // of repetition then deeper repetition indices will support deeper nested random access.  For
-  // example, given 5 layers of repetition then the repetition index depth must be at least
-  // 3 to support access like rows[50][17][3].
-  //
-  // We require `repetition_index_depth + 1` u64 values per mini-block to store the repetition
-  // index if the `repetition_index_depth` is greater than 0.  The +1 is because we need to store
-  // the number of "leftover items" at the end of the chunk.  Otherwise, we wouldn't have any way
-  // to know if the final item in a chunk is valid or not.
-  uint32 repetition_index_depth = 8;
-  // The page already records how many rows are in the page.  For mini-block we also need to know how
-  // many "items" are in the page.  A row and an item are the same thing unless the page has lists.
-  uint64 num_items = 9;
+    // Description of the compression of repetition levels (e.g. how many bits per rep)
+    //
+    // Optional, if there is no repetition then this field is not present
+    CompressiveEncoding rep_compression = 1;
+    // Description of the compression of definition levels (e.g. how many bits per def)
+    //
+    // Optional, if there is no definition then this field is not present
+    CompressiveEncoding def_compression = 2;
+    // Description of the compression of values
+    CompressiveEncoding value_compression = 3;
+    // Description of the compression of the dictionary data
+    //
+    // Optional, if there is no dictionary then this field is not present
+    CompressiveEncoding dictionary = 4;
+    // Number of items in the dictionary
+    uint64 num_dictionary_items = 5;
+    // The meaning of each repdef layer, used to interpret repdef buffers correctly
+    repeated RepDefLayer layers = 6;
+    // The number of buffers in each mini-block, this is determined by the compression and does
+    // NOT include the repetition or definition buffers (the presence of these buffers can be determined
+    // by looking at the rep_compression and def_compression fields)
+    uint64 num_buffers = 7;
+    // The depth of the repetition index.
+    //
+    // If there is repetition then the depth must be at least 1.  If there are many layers
+    // of repetition then deeper repetition indices will support deeper nested random access.  For
+    // example, given 5 layers of repetition then the repetition index depth must be at least
+    // 3 to support access like rows[50][17][3].
+    //
+    // We require `repetition_index_depth + 1` u64 values per mini-block to store the repetition
+    // index if the `repetition_index_depth` is greater than 0.  The +1 is because we need to store
+    // the number of "leftover items" at the end of the chunk.  Otherwise, we wouldn't have any way
+    // to know if the final item in a chunk is valid or not.
+    uint32 repetition_index_depth = 8;
+    // The page already records how many rows are in the page.  For mini-block we also need to know how
+    // many "items" are in the page.  A row and an item are the same thing unless the page has lists.
+    uint64 num_items = 9;
 }
 
 // A layout used for pages where the data is large
@@ -131,29 +131,29 @@ message MiniBlockLayout {
 // In this case the cost of transposing the data is relatively small (compared to the cost of writing the data)
 // and so we just zip the buffers together
 message FullZipLayout {
-  // The number of bits of repetition info (0 if there is no repetition)
-  uint32 bits_rep = 1;
-  // The number of bits of definition info (0 if there is no definition)
-  uint32 bits_def = 2;
-  // The number of bits of value info
-  //
-  // Note: we use bits here (and not bytes) for consistency with other encodings.  However, in practice,
-  // there is never a reason to use a bits per value that is not a multiple of 8.  The complexity is not
-  // worth the small savings in space since this encoding is typically used with large values already.
-  oneof details {
-    // If this is a fixed width block then we need to have a fixed number of bits per value
-    uint32 bits_per_value = 3;
-    // If this is a variable width block then we need to have a fixed number of bits per offset
-    uint32 bits_per_offset = 4;
-  }
-  // The number of items in the page
-  uint32 num_items = 5;
-  // The number of visible items in the page
-  uint32 num_visible_items = 6;
-  // Description of the compression of values
-  CompressiveEncoding value_compression = 7;
-  // The meaning of each repdef layer, used to interpret repdef buffers correctly
-  repeated RepDefLayer layers = 8;
+    // The number of bits of repetition info (0 if there is no repetition)
+    uint32 bits_rep = 1;
+    // The number of bits of definition info (0 if there is no definition)
+    uint32 bits_def = 2;
+    // The number of bits of value info
+    //
+    // Note: we use bits here (and not bytes) for consistency with other encodings.  However, in practice,
+    // there is never a reason to use a bits per value that is not a multiple of 8.  The complexity is not
+    // worth the small savings in space since this encoding is typically used with large values already.
+    oneof details {
+        // If this is a fixed width block then we need to have a fixed number of bits per value
+        uint32 bits_per_value = 3;
+        // If this is a variable width block then we need to have a fixed number of bits per offset
+        uint32 bits_per_offset = 4;
+    }
+    // The number of items in the page
+    uint32 num_items = 5;
+    // The number of visible items in the page
+    uint32 num_visible_items = 6;
+    // Description of the compression of values
+    CompressiveEncoding value_compression = 7;
+    // The meaning of each repdef layer, used to interpret repdef buffers correctly
+    repeated RepDefLayer layers = 8;
 }
 
 // A layout used for pages where all values are null
@@ -161,20 +161,20 @@ message FullZipLayout {
 // There may be buffers of repetition and definition information
 // if required in order to interpret what kind of nulls are present
 message AllNullLayout {
-  // The meaning of each repdef layer, used to interpret repdef buffers correctly
-  repeated RepDefLayer layers = 5;
+    // The meaning of each repdef layer, used to interpret repdef buffers correctly
+    repeated RepDefLayer layers = 5;
 }
 
 // Describes the structural encoding of a page
 message PageLayout {
-  oneof layout {
-    // A layout used for pages where the data is small
-    MiniBlockLayout mini_block_layout = 1;
-    // A layout used for pages where all values are null
-    AllNullLayout all_null_layout = 2;
-    // A layout used for pages where the data is large
-    FullZipLayout full_zip_layout = 3;
-  }
+    oneof layout {
+        // A layout used for pages where the data is small
+        MiniBlockLayout mini_block_layout = 1;
+        // A layout used for pages where all values are null
+        AllNullLayout all_null_layout = 2;
+        // A layout used for pages where the data is large
+        FullZipLayout full_zip_layout = 3;
+    }
 }
 
 // # Compressive Encodings
@@ -197,9 +197,9 @@ message PageLayout {
 // are stored in the page and no longer compressed.
 
 enum CompressionScheme {
-  COMPRESSION_ALGORITHM_UNSPECIFIED = 0;
-  COMPRESSION_ALGORITHM_LZ4 = 1;
-  COMPRESSION_ALGORITHM_ZSTD = 2;
+    COMPRESSION_ALGORITHM_UNSPECIFIED = 0;
+    COMPRESSION_ALGORITHM_LZ4 = 1;
+    COMPRESSION_ALGORITHM_ZSTD = 2;
 }
 
 // Compression applied to a single buffer of data
@@ -214,15 +214,15 @@ enum CompressionScheme {
 //
 // This is a leaf, no further compression is applied to the data.
 message BufferCompression {
-  // A general compression scheme to apply to the buffer
-  CompressionScheme scheme = 1;
-  // The compression level
-  //
-  // Optional, if not present a scheme-specific default value will be used.
-  //
-  // Interpretation of this value depends on the compression scheme.  Generally, larger
-  // values indicate more compression at the expense of more CPU time.
-  optional int32 level = 2;
+    // A general compression scheme to apply to the buffer
+    CompressionScheme scheme = 1;
+    // The compression level
+    //
+    // Optional, if not present a scheme-specific default value will be used.
+    //
+    // Interpretation of this value depends on the compression scheme.  Generally, larger
+    // values indicate more compression at the expense of more CPU time.
+    optional int32 level = 2;
 }
 
 // Fixed width items placed contiguously in a single buffer
@@ -234,11 +234,11 @@ message BufferCompression {
 // The input is a fixed-width data block.
 // The output is a single buffer.
 message Flat {
-  // the number of bits per value, must be greater than 0, does
-  // not need to be a multiple of 8
-  uint64 bits_per_value = 1;
-  // The compression applied to the data
-  optional BufferCompression data = 2;
+    // the number of bits per value, must be greater than 0, does
+    // not need to be a multiple of 8
+    uint64 bits_per_value = 1;
+    // The compression applied to the data
+    optional BufferCompression data = 2;
 }
 
 // Variable width items have the values stored in one buffer and the
@@ -253,10 +253,10 @@ message Flat {
 // The output is a single fixed-width data block (the offsets) and
 // a single buffer (the values)
 message Variable {
-  // Describes how the offsets data block is compressed
-  CompressiveEncoding offsets = 1;
-  // The compression applied to the values
-  optional BufferCompression values = 2;
+    // Describes how the offsets data block is compressed
+    CompressiveEncoding offsets = 1;
+    // The compression applied to the values
+    optional BufferCompression values = 2;
 }
 
 // Compression algorithm where all values have a constant value (encoded in the description)
@@ -266,8 +266,8 @@ message Variable {
 // The input can be any kind of data block.
 // There is no output.
 message Constant {
-  // The value (TODO: define encoding for literals?)
-  bytes value = 1;
+    // The value (TODO: define encoding for literals?)
+    bytes value = 1;
 }
 
 // A compression scheme in which a single fixed-width block is "packed" into
@@ -284,10 +284,10 @@ message Constant {
 // The input is a fixed-width data block.
 // The output is a single fixed-width data block.
 message OutOfLineBitpacking {
-  // the number of bits of the uncompressed value. e.g. for a u32, this will be 32
-  uint64 uncompressed_bits_per_value = 1;
-  // The compression used to store the bitpacked values data block
-  CompressiveEncoding values = 3;
+    // the number of bits of the uncompressed value. e.g. for a u32, this will be 32
+    uint64 uncompressed_bits_per_value = 1;
+    // The compression used to store the bitpacked values data block
+    CompressiveEncoding values = 3;
 }
 
 // Bitpacking variant where the bits per value are stored inline in the chunks themselves
@@ -300,10 +300,10 @@ message OutOfLineBitpacking {
 // The input is a fixed-width data block.
 // The output is a single buffer.
 message InlineBitpacking {
-  // the number of bits of the uncompressed value. e.g. for a u32, this will be 32
-  uint64 uncompressed_bits_per_value = 1;
-  // The compression applied to the values
-  optional BufferCompression values = 2;
+    // the number of bits of the uncompressed value. e.g. for a u32, this will be 32
+    uint64 uncompressed_bits_per_value = 1;
+    // The compression applied to the values
+    optional BufferCompression values = 2;
 }
 
 // A compression scheme for variable-width data
@@ -317,10 +317,10 @@ message InlineBitpacking {
 // The input is a variable-width data block.
 // The output is a single variable-width data block.
 message Fsst {
-  // The FSST symbol table
-  bytes symbol_table = 1;
-  // The compression used to store the compressed values data block
-  CompressiveEncoding values = 2;
+    // The FSST symbol table
+    bytes symbol_table = 1;
+    // The compression used to store the compressed values data block
+    CompressiveEncoding values = 2;
 }
 
 // A compression scheme where common values are stored in a dictionary and the values are
@@ -333,12 +333,12 @@ message Fsst {
 // - A data block of the same kind as the input (the dictionary)
 // - A fixed-width data block containing the indices into the dictionary.
 message Dictionary {
-  // The compression used to store the indices data block
-  CompressiveEncoding indices = 1;
-  // The compression used to store the dictionary items data block
-  CompressiveEncoding items = 2;
-  // The number of items in the dictionary
-  uint32 num_dictionary_items = 3;
+    // The compression used to store the indices data block
+    CompressiveEncoding indices = 1;
+    // The compression used to store the dictionary items data block
+    CompressiveEncoding items = 2;
+    // The number of items in the dictionary
+    uint32 num_dictionary_items = 3;
 }
 
 // A compression scheme where runs of common values are encoded as a single value and a count
@@ -350,10 +350,10 @@ message Dictionary {
 // - A data block of the same kind as the input (the run values)
 // - A fixed-width data block containing the lengths of the runs
 message Rle {
-  // The compression used to store the run values data block
-  CompressiveEncoding values = 1;
-  // The compression used to store the run lengths data block
-  CompressiveEncoding run_lengths = 2;
+    // The compression used to store the run values data block
+    CompressiveEncoding values = 1;
+    // The compression used to store the run lengths data block
+    CompressiveEncoding run_lengths = 2;
 }
 
 // Converts a fixed-size-list of values into a flattened list of values
@@ -365,12 +365,12 @@ message Rle {
 // The input is a single block of fixed-width data (with a wide width and few items)
 // The output is a single block of fixed-width data (with a narrow width and many items)
 message FixedSizeList {
-  // The number of items in this layer of FSL
-  uint64 items_per_value = 1;
-  // Whether or not there is a validity buffer
-  bool has_validity = 3;
-  // The compression used to store the flattened values data block
-  CompressiveEncoding values = 2;
+    // The number of items in this layer of FSL
+    uint64 items_per_value = 1;
+    // Whether or not there is a validity buffer
+    bool has_validity = 3;
+    // The compression used to store the flattened values data block
+    CompressiveEncoding values = 2;
 }
 
 // Converts a struct data block into either a fixed-width data block or a variable-width data block
@@ -384,10 +384,10 @@ message FixedSizeList {
 // The input is a single struct data block
 // The output is a single fixed-width or variable-width data block
 message PackedStruct {
-  // The number of bits per value for each field
-  repeated uint64 bits_per_value = 1;
-  // The compression used to store the values data block
-  CompressiveEncoding values = 2;
+    // The number of bits per value for each field
+    repeated uint64 bits_per_value = 1;
+    // The compression used to store the values data block
+    CompressiveEncoding values = 2;
 }
 
 // A compression scheme that wraps the underlying data with general compression
@@ -417,10 +417,10 @@ message PackedStruct {
 // The input is a single data block of any kind.
 // The output is a single data block of the same kind as the input.
 message General {
-  // The compression to apply to the values
-  BufferCompression compression = 1;
-  // The compression used to store the output data block
-  CompressiveEncoding values = 3;
+    // The compression to apply to the values
+    BufferCompression compression = 1;
+    // The compression used to store the output data block
+    CompressiveEncoding values = 3;
 }
 
 // A compression scheme where fixed-width values are transposed into a series of byte streams
@@ -438,8 +438,8 @@ message General {
 // The input is a fixed-width data block
 // The output is a single fixed-width data block
 message ByteStreamSplit {
-  // The compression used to store the values
-  CompressiveEncoding values = 1;
+    // The compression used to store the values
+    CompressiveEncoding values = 1;
 }
 
 // An encoding that compresses a data block into buffers
