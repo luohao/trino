@@ -24,6 +24,12 @@ import static com.google.common.base.Verify.verify;
 import static io.trino.lance.file.v2.metadata.RepDefLayer.ALL_VALID_ITEM;
 import static io.trino.lance.file.v2.metadata.RepDefLayer.NULLABLE_ITEM;
 
+// Lance uses repetition/definition levels similar to Parquet for nested data.
+// Key difference: Lance uses a layered system with 6 RepDefLayer types:
+// - ALL_VALID_ITEM/ALL_VALID_LIST: No nulls/empties (0 def levels)
+// - NULLABLE_ITEM/NULLABLE_LIST: Nulls only (1 def level)
+// - EMPTYABLE_LIST: Empty lists only (1 def level)
+// - NULLABLE_AND_EMPTYABLE_LIST: Both null and empty lists (2 def levels)
 public class BaseUnraveler
         implements RepetitionDefinitionUnraveler
 {

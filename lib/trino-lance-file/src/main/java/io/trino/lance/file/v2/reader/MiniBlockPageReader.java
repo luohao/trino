@@ -134,9 +134,8 @@ public class MiniBlockPageReader
             else {
                 dictionaryBlock = Optional.empty();
             }
-            // load rep index
+            // load repetition index
             if (repetitionIndexDepth > 0) {
-                // TODO: refactor for readability
                 DiskRange repetitionIndexRange = bufferOffsets.getLast();
                 verify(repetitionIndexRange.getLength() % 8 == 0);
                 Slice repetitionIndexSlice = dataSource.readFully(repetitionIndexRange.getPosition(), toIntExact(repetitionIndexRange.getLength()));
@@ -259,7 +258,6 @@ public class MiniBlockPageReader
 
     public static SelectedRanges mapRange(Range rowRange, int[] rep, int[] def, int maxRepetitionLevel, int maxVisibleDefinition, int numItems, PreambleAction preambleAction)
     {
-        // TODO: better readability
         if (rep == null) {
             // if there is no repetition, item and level range are the same as row range
             return new SelectedRanges(rowRange, rowRange);

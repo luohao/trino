@@ -151,7 +151,6 @@ public class LanceReader
 
     public static List<Field> toFields(List<File.Field> fieldsProto)
     {
-        // TODO: optimize
         Map<Integer, Field> fieldMap = Maps.newHashMapWithExpectedSize(fieldsProto.size());
         for (File.Field proto : fieldsProto) {
             fieldMap.put(proto.getId(), Field.fromProto(proto));

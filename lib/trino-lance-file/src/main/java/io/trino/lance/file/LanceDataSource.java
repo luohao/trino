@@ -37,9 +37,6 @@ public interface LanceDataSource
     Slice readFully(long position, int length)
             throws IOException;
 
-    // TODO: support scattered reads
-    //     <K> Map<K, LanceDataReader> readFully(Map<K, DiskRange> diskRanges)
-    //            throws IOException;
     @Override
     default void close()
             throws IOException

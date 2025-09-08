@@ -30,7 +30,6 @@ public interface ColumnReader
             List<Range> readRanges,
             AggregatedMemoryContext memoryContext)
     {
-        // TODO: support FixedSizeList column
         return switch (LogicalType.from(field.getLogicalType())) {
             case LogicalType.Int8Type _,
                  LogicalType.Int16Type _,
