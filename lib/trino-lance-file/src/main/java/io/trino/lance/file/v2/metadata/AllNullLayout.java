@@ -13,8 +13,6 @@
  */
 package io.trino.lance.file.v2.metadata;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
-
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -29,7 +27,7 @@ public final class AllNullLayout
         this.layers = requireNonNull(layers, "layers is null");
     }
 
-    public static AllNullLayout fromProto(EncodingsV21.AllNullLayout proto)
+    public static AllNullLayout fromProto(build.buf.gen.lance.encodings21.AllNullLayout proto)
     {
         return new AllNullLayout(RepDefLayer.fromProtoList(proto.getLayersList()));
     }

@@ -13,7 +13,6 @@
  */
 package io.trino.lance.file.v2.encoding;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
 import io.airlift.slice.Slice;
 import io.trino.lance.file.v2.reader.BufferAdapter;
 import io.trino.spi.block.ValueBlock;
@@ -24,7 +23,7 @@ import static java.lang.Math.toIntExact;
 
 public interface LanceEncoding
 {
-    static LanceEncoding fromProto(EncodingsV21.CompressiveEncoding proto)
+    static LanceEncoding fromProto(build.buf.gen.lance.encodings21.CompressiveEncoding proto)
     {
         return switch (proto.getCompressionCase()) {
             case FLAT -> new FlatValueEncoding(toIntExact(proto.getFlat().getBitsPerValue() / Byte.SIZE));

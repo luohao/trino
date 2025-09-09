@@ -13,7 +13,6 @@
  */
 package io.trino.lance.file.v2.encoding;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import io.trino.lance.file.v2.reader.BinaryBuffer;
@@ -68,7 +67,7 @@ public class FsstEncoding
         return new FsstMiniBlockDecoder(valueEncoding.getMiniBlockDecoder());
     }
 
-    public static FsstEncoding fromProto(EncodingsV21.Fsst proto)
+    public static FsstEncoding fromProto(build.buf.gen.lance.encodings21.Fsst proto)
     {
         LanceEncoding valueEncoding = LanceEncoding.fromProto(proto.getValues());
         return new FsstEncoding(valueEncoding, Slices.wrappedBuffer(proto.getSymbolTable().toByteArray()));

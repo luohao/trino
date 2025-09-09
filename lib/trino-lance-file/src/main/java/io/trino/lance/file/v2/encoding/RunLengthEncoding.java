@@ -13,7 +13,6 @@
  */
 package io.trino.lance.file.v2.encoding;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
 import io.airlift.slice.Slice;
 import io.trino.lance.file.v2.reader.BufferAdapter;
 
@@ -61,12 +60,12 @@ public class RunLengthEncoding
         };
     }
 
-    public static RunLengthEncoding from(EncodingsV21.Rle proto)
+    public static RunLengthEncoding from(build.buf.gen.lance.encodings21.Rle proto)
     {
         checkArgument(proto.getValues().hasFlat(), "value buffer only supports flat encoding");
         checkArgument(proto.getRunLengths().hasFlat(), "length buffer only supports flat encoding");
-        EncodingsV21.Flat lengthEncoding = proto.getRunLengths().getFlat();
-        EncodingsV21.Flat valueEncoding = proto.getValues().getFlat();
+        build.buf.gen.lance.encodings21.Flat lengthEncoding = proto.getRunLengths().getFlat();
+        build.buf.gen.lance.encodings21.Flat valueEncoding = proto.getValues().getFlat();
         return new RunLengthEncoding(toIntExact(valueEncoding.getBitsPerValue()));
     }
 

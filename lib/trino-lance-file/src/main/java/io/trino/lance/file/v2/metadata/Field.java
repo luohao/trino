@@ -17,7 +17,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
-import com.lancedb.lance.protobuf.File;
 import io.trino.spi.type.ArrayType;
 import io.trino.spi.type.RowType;
 import io.trino.spi.type.Type;
@@ -68,7 +67,7 @@ public class Field
         this.children = requireNonNull(children, "children is null");
     }
 
-    public static Field fromProto(File.Field proto)
+    public static Field fromProto(build.buf.gen.lance.file.Field proto)
     {
         ImmutableMap.Builder<String, String> metadataBuilder = ImmutableMap.builder();
         for (Map.Entry<String, ByteString> entry : proto.getMetadataMap().entrySet()) {

@@ -15,6 +15,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>build.buf.gen</groupId>
+            <artifactId>lancedb_lance_protocolbuffers_java</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
@@ -166,4 +171,18 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>buf</id>
+            <name>Buf Maven Repository</name>
+            <url>https://buf.build/gen/maven</url>
+        </repository>
+    </repositories>
 </project>

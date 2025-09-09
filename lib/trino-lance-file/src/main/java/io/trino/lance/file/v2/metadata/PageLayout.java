@@ -13,12 +13,10 @@
  */
 package io.trino.lance.file.v2.metadata;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
-
 public sealed interface PageLayout
         permits MiniBlockLayout, AllNullLayout, FullZipLayout
 {
-    static PageLayout fromProto(EncodingsV21.PageLayout proto)
+    static PageLayout fromProto(build.buf.gen.lance.encodings21.PageLayout proto)
     {
         return switch (proto.getLayoutCase()) {
             case MINI_BLOCK_LAYOUT -> MiniBlockLayout.fromProto(proto.getMiniBlockLayout());

@@ -16,8 +16,6 @@ package io.trino.lance.file.v2.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.lancedb.lance.protobuf.EncodingsV21;
-import com.lancedb.lance.protobuf.File2;
 import io.airlift.slice.Slice;
 
 import java.util.List;
@@ -44,9 +42,9 @@ public class ColumnMetadata
     {
         checkArgument(data != null, "data is null");
 
-        File2.ColumnMetadata proto;
+        build.buf.gen.lance.file.v2.ColumnMetadata proto;
         try {
-            proto = File2.ColumnMetadata.parseFrom(data.toByteBuffer());
+            proto = build.buf.gen.lance.file.v2.ColumnMetadata.parseFrom(data.toByteBuffer());
         }
         catch (InvalidProtocolBufferException e) {
             throw new RuntimeException("Failed to fromProto ColumnMetadata proto: " + e);
@@ -71,15 +69,15 @@ public class ColumnMetadata
         return new ColumnMetadata(columnIndex, pages, buffers);
     }
 
-    private static PageLayout getPageLayout(File2.ColumnMetadata.Page page)
+    private static PageLayout getPageLayout(build.buf.gen.lance.file.v2.ColumnMetadata.Page page)
     {
         checkArgument(page.hasEncoding(), "Page has no encoding");
-        File2.Encoding encoding = page.getEncoding();
+        build.buf.gen.lance.file.v2.Encoding encoding = page.getEncoding();
         return switch (encoding.getLocationCase()) {
             case DIRECT -> {
                 try {
                     Any any = Any.parseFrom(encoding.getDirect().getEncoding().toByteArray());
-                    EncodingsV21.PageLayout layout = any.unpack(EncodingsV21.PageLayout.class);
+                    build.buf.gen.lance.encodings21.PageLayout layout = any.unpack(build.buf.gen.lance.encodings21.PageLayout.class);
                     yield PageLayout.fromProto(layout);
                 }
                 catch (InvalidProtocolBufferException e) {

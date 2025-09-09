@@ -15,7 +15,6 @@ package io.trino.plugin.lance.metadata;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.lancedb.lance.protobuf.Table;
 
 import java.util.List;
 
@@ -40,7 +39,7 @@ public class Fragment
         this.physicalRows = requireNonNull(physicalRows, "physicalRows is null");
     }
 
-    public static Fragment from(Table.DataFragment proto)
+    public static Fragment from(build.buf.gen.lance.table.DataFragment proto)
     {
         if (proto.hasDeletionFile()) {
             throw new UnsupportedOperationException("Deletion files are not supported");
@@ -78,7 +77,7 @@ public class Fragment
             requireNonNull(columnIndices, "columnIndices is null");
         }
 
-        public static DataFile from(Table.DataFile proto)
+        public static DataFile from(build.buf.gen.lance.table.DataFile proto)
         {
             return new DataFile(proto.getPath(),
                     proto.getFieldsList(),

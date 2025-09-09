@@ -13,8 +13,6 @@
  */
 package io.trino.lance.file.v2.metadata;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
-
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -44,7 +42,7 @@ public final class FullZipLayout
         this.repDefLayers = requireNonNull(repDefLayers, "repDefLayers is null");
     }
 
-    public static FullZipLayout fromProto(EncodingsV21.FullZipLayout proto)
+    public static FullZipLayout fromProto(build.buf.gen.lance.encodings21.FullZipLayout proto)
     {
         Block block = switch (proto.getDetailsCase()) {
             case BITS_PER_VALUE -> new Block.FixedWidthBlock(proto.getBitsPerValue());

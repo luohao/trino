@@ -16,7 +16,6 @@ package io.trino.plugin.lance.metadata;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.lancedb.lance.protobuf.Table;
 import io.airlift.slice.Slice;
 import io.trino.lance.file.v2.metadata.Field;
 import io.trino.spi.TrinoException;
@@ -68,9 +67,9 @@ public class Manifest
         if (recordedLength != length - position - 20) {
             throw new TrinoException(LANCE_INVALID_METADATA, "Invalid manifest proto message length: " + recordedLength);
         }
-        Table.Manifest proto;
+        build.buf.gen.lance.table.Manifest proto;
         try {
-            proto = Table.Manifest.parseFrom(slice.slice(toIntExact(position + 4), recordedLength).toByteBuffer());
+            proto = build.buf.gen.lance.table.Manifest.parseFrom(slice.slice(toIntExact(position + 4), recordedLength).toByteBuffer());
         }
         catch (InvalidProtocolBufferException e) {
             throw new TrinoException(LANCE_INVALID_METADATA, e);

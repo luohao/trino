@@ -13,7 +13,6 @@
  */
 package io.trino.lance.file.v2.metadata;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
 import io.trino.lance.file.v2.encoding.LanceEncoding;
 
 import java.util.List;
@@ -55,7 +54,7 @@ public record MiniBlockLayout(LanceEncoding valueEncoding,
         this.numItems = requireNonNull(numItems, "numItems is null");
     }
 
-    public static MiniBlockLayout fromProto(EncodingsV21.MiniBlockLayout proto)
+    public static MiniBlockLayout fromProto(build.buf.gen.lance.encodings21.MiniBlockLayout proto)
     {
         checkArgument(proto.hasValueCompression());
         return new MiniBlockLayout(

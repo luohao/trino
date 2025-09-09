@@ -10,16 +10,20 @@
     </parent>
 
     <artifactId>trino-lance-file</artifactId>
-    <description>Trino - Lance file format support</description>
+    <description>Trino - Lance file format</description>
 
     <properties>
-        <!--        <air.compiler.fail-warnings>true</air.compiler.fail-warnings>-->
         <air.test.jvm.additional-arguments>${air.test.jvm.additional-arguments.default}
             --add-opens=java.base/java.nio=ALL-UNNAMED
             --sun-misc-unsafe-memory-access=allow</air.test.jvm.additional-arguments>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>build.buf.gen</groupId>
+            <artifactId>lancedb_lance_protocolbuffers_java</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
@@ -155,32 +159,17 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.xolstice.maven.plugins</groupId>
-                <artifactId>protobuf-maven-plugin</artifactId>
-                <version>0.6.1</version>
-                <configuration>
-                    <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/LanceReaderTest.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>buf</id>
+            <name>Buf Maven Repository</name>
+            <url>https://buf.build/gen/maven</url>
+        </repository>
+    </repositories>
 </project>

@@ -308,6 +308,12 @@
             </dependency>
 
             <dependency>
+                <groupId>build.buf.gen</groupId>
+                <artifactId>lancedb_lance_protocolbuffers_java</artifactId>
+                <version>25.8.0.1.20250908232953.139701824b46</version>
+            </dependency>
+
+            <dependency>
                 <groupId>com.adobe.testing</groupId>
                 <artifactId>s3mock-testcontainers</artifactId>
                 <version>4.7.0</version>

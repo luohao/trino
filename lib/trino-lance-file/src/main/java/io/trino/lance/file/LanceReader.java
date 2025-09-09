@@ -16,7 +16,6 @@ package io.trino.lance.file;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.errorprone.annotations.CheckReturnValue;
-import com.lancedb.lance.protobuf.File;
 import io.airlift.slice.Slice;
 import io.trino.lance.file.v2.metadata.ColumnMetadata;
 import io.trino.lance.file.v2.metadata.DiskRange;
@@ -101,7 +100,7 @@ public class LanceReader
         // read file descriptor
         // FIXME: I don't see this documented in the format spec, but the rust implementation does this.
         Slice schemaSlice = metadataSlice.slice(0, toIntExact(schemaBufferLocation.getLength()));
-        File.FileDescriptor fileDescriptor = File.FileDescriptor.parseFrom(schemaSlice.toByteBuffer());
+        build.buf.gen.lance.file.FileDescriptor fileDescriptor = build.buf.gen.lance.file.FileDescriptor.parseFrom(schemaSlice.toByteBuffer());
         checkArgument(fileDescriptor.hasSchema(), "FileDescriptor does not contain a schema");
         this.fields = toFields(fileDescriptor.getSchema());
         List<Range> ranges = requestRanges.orElse(ImmutableList.of(Range.of(0, fileDescriptor.getLength())));
@@ -144,15 +143,15 @@ public class LanceReader
     }
 
     // FIXME: refactor as lancedb also needs this utility
-    public static List<Field> toFields(File.Schema schema)
+    public static List<Field> toFields(build.buf.gen.lance.file.Schema schema)
     {
         return toFields(schema.getFieldsList());
     }
 
-    public static List<Field> toFields(List<File.Field> fieldsProto)
+    public static List<Field> toFields(List<build.buf.gen.lance.file.Field> fieldsProto)
     {
         Map<Integer, Field> fieldMap = Maps.newHashMapWithExpectedSize(fieldsProto.size());
-        for (File.Field proto : fieldsProto) {
+        for (build.buf.gen.lance.file.Field proto : fieldsProto) {
             fieldMap.put(proto.getId(), Field.fromProto(proto));
         }
         List<Field> fields = new ArrayList<>();

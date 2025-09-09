@@ -13,8 +13,6 @@
  */
 package io.trino.lance.file.v2.metadata;
 
-import com.lancedb.lance.protobuf.EncodingsV21;
-
 import java.util.List;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -23,7 +21,7 @@ public enum RepDefLayer
 {
     ALL_VALID_ITEM, ALL_VALID_LIST, NULLABLE_ITEM, NULLABLE_LIST, EMPTYABLE_LIST, NULLABLE_AND_EMPTYABLE_LIST;
 
-    public static RepDefLayer fromProto(EncodingsV21.RepDefLayer proto)
+    public static RepDefLayer fromProto(build.buf.gen.lance.encodings21.RepDefLayer proto)
     {
         return switch (proto) {
             case REPDEF_ALL_VALID_ITEM -> ALL_VALID_ITEM;
@@ -36,7 +34,7 @@ public enum RepDefLayer
         };
     }
 
-    public static List<RepDefLayer> fromProtoList(List<EncodingsV21.RepDefLayer> protos)
+    public static List<RepDefLayer> fromProtoList(List<build.buf.gen.lance.encodings21.RepDefLayer> protos)
     {
         return protos.stream().map(RepDefLayer::fromProto).collect(toImmutableList());
     }
