@@ -83,7 +83,7 @@ public class LanceTester
     private static void assertFileContentsTrino(Type type, TempFile tempFile, List<?> expectedValues)
             throws IOException
     {
-        try (LanceReader lanceReader = createLanceReader(tempFile, type)) {
+        try (LanceReader lanceReader = createLanceReader(tempFile)) {
             Iterator<?> iterator = expectedValues.iterator();
 
             int rowsProcessed = 0;
@@ -133,7 +133,7 @@ public class LanceTester
         }
     }
 
-    private static LanceReader createLanceReader(TempFile tempFile, Type type)
+    private static LanceReader createLanceReader(TempFile tempFile)
             throws IOException
     {
         LanceDataSource dataSource = new FileLanceDataSource(tempFile.getFile());
@@ -308,26 +308,14 @@ public class LanceTester
     {
         ArrowType arrowType = field.getType();
 
-        if (arrowType instanceof ArrowType.Int) {
-            writeIntVector(vector, data, (ArrowType.Int) arrowType);
-        }
-        else if (arrowType instanceof ArrowType.FloatingPoint) {
-            writeFloatingPointVector(vector, data, (ArrowType.FloatingPoint) arrowType);
-        }
-        else if (arrowType instanceof ArrowType.Utf8) {
-            writeStringVector((VarCharVector) vector, data);
-        }
-        else if (arrowType instanceof ArrowType.Binary) {
-            writeBinaryVector((VarBinaryVector) vector, data);
-        }
-        else if (arrowType instanceof ArrowType.Struct) {
-            writeStructVector((StructVector) vector, field, data);
-        }
-        else if (arrowType instanceof ArrowType.List) {
-            writeListVector((ListVector) vector, field, data);
-        }
-        else {
-            throw new UnsupportedOperationException("Unsupported Arrow type: " + arrowType);
+        switch (arrowType) {
+            case ArrowType.Int intType -> writeIntVector(vector, data, intType);
+            case ArrowType.FloatingPoint floatingPointType -> writeFloatingPointVector(vector, data, floatingPointType);
+            case ArrowType.Utf8 _ -> writeStringVector((VarCharVector) vector, data);
+            case ArrowType.Binary _ -> writeBinaryVector((VarBinaryVector) vector, data);
+            case ArrowType.Struct _ -> writeStructVector((StructVector) vector, field, data);
+            case ArrowType.List _ -> writeListVector((ListVector) vector, field, data);
+            case null, default -> throw new UnsupportedOperationException("Unsupported Arrow type: " + arrowType);
         }
 
         vector.setValueCount(data.size());
@@ -536,6 +524,7 @@ public class LanceTester
                             switch (floatType.getPrecision()) {
                                 case SINGLE -> writer.writeFloat4((float) value);
                                 case DOUBLE -> writer.writeFloat8((double) value);
+                                default -> throw new UnsupportedOperationException("Unsupported floatType " + floatType.getPrecision());
                             }
                         }
                         case ArrowType.Utf8 _ -> writer.writeVarChar((String) value);

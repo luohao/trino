@@ -147,18 +147,6 @@ class TestRepDefUnravler
     }
 
     @Test
-    public void testOne()
-    {
-        BaseUnraveler unraveler = new BaseUnraveler(new int[] {1, 1, 1, 1, 1, 1, 1},
-                new int[] {0, 0, 0, 0, 0, 1, 1},
-                new RepDefLayer[] {ALL_VALID_ITEM, NULLABLE_AND_EMPTYABLE_LIST});
-        Optional<boolean[]> nulls = unraveler.calculateNulls();
-        BlockPositions positions = unraveler.calculateOffsets();
-        return;
-//        assertBlockPositionsEqual(new BlockPositions(Optional.of(new boolean[] {false, true, false, false}), new int[] {0, 4, 4, 4, 6}), innerPositions);
-    }
-
-    @Test
     public void testNoRep()
     {
         BaseUnraveler unraveler = new BaseUnraveler(new int[0], new int[] {2, 2, 0, 0, 1}, new RepDefLayer[] {NULLABLE_ITEM, NULLABLE_ITEM, ALL_VALID_ITEM});

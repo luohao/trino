@@ -66,7 +66,6 @@ public class LanceJNIReader
         implements Closeable
 {
     public static final int READ_BATCH_SIZE = 8192;
-    private final List<String> columnNames;
     private final List<Type> columnTypes;
     private final BufferAllocator allocator;
     private final ArrowReader arrowReader;
@@ -75,7 +74,6 @@ public class LanceJNIReader
     public LanceJNIReader(File file, List<String> columnNames, List<Type> columnTypes)
             throws IOException
     {
-        this.columnNames = requireNonNull(columnNames, "columnNames is null");
         this.columnTypes = requireNonNull(columnTypes, "columnTypes is null");
         this.allocator = new RootAllocator();
         LanceFileReader lanceReader = LanceFileReader.open(file.getPath(), allocator);
