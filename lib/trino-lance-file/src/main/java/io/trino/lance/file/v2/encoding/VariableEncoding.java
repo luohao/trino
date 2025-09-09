@@ -71,7 +71,7 @@ public class VariableEncoding
         };
     }
 
-    public class VariableBinaryDecoder
+    public static class VariableBinaryDecoder
             implements MiniBlockDecoder<BinaryBuffer>
     {
         private Slice slice;

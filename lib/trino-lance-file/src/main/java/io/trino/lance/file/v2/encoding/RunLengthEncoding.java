@@ -68,7 +68,7 @@ public class RunLengthEncoding
         return new RunLengthEncoding(toIntExact(valueEncoding.getBitsPerValue()));
     }
 
-    public abstract class RunLengthDecoder<T>
+    public abstract static class RunLengthDecoder<T>
             implements MiniBlockDecoder<T>
     {
         private final int bitsPerValue;
@@ -127,7 +127,7 @@ public class RunLengthEncoding
         protected abstract void fill(int runOffset, T destination, int offset, int length);
     }
 
-    public class ByteRunLengthDecoder
+    public static class ByteRunLengthDecoder
             extends RunLengthDecoder<byte[]>
     {
         protected ByteRunLengthDecoder(int bitsPerValue)
@@ -142,7 +142,7 @@ public class RunLengthEncoding
         }
     }
 
-    public class ShortRunLengthDecoder
+    public static class ShortRunLengthDecoder
             extends RunLengthDecoder<short[]>
     {
         protected ShortRunLengthDecoder(int bitsPerValue)
@@ -157,7 +157,7 @@ public class RunLengthEncoding
         }
     }
 
-    public class IntegerRunLengthDecoder
+    public static class IntegerRunLengthDecoder
             extends RunLengthDecoder<int[]>
     {
         protected IntegerRunLengthDecoder(int bitsPerValue)
@@ -172,7 +172,7 @@ public class RunLengthEncoding
         }
     }
 
-    public class LongRunLengthDecoder
+    public static class LongRunLengthDecoder
             extends RunLengthDecoder<long[]>
     {
         protected LongRunLengthDecoder(int bitsPerValue)

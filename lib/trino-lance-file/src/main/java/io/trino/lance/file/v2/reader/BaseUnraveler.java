@@ -85,6 +85,7 @@ public class BaseUnraveler
         currentLayer++;
     }
 
+    @Override
     public long maxLists()
     {
         checkArgument(layers[currentLayer] != NULLABLE_ITEM, "Current layer must not be a struct or primitive");

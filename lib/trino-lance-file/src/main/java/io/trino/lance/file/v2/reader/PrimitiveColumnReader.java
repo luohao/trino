@@ -31,6 +31,7 @@ import java.util.List;
 import static com.google.common.base.Verify.verify;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 public class PrimitiveColumnReader
@@ -130,7 +131,7 @@ public class PrimitiveColumnReader
             DecodedPage decodedPage = pageReader.decodeRanges(builder.build());
             decodedPages.add(decodedPage);
             long numRowsRead = nextBatchSize - rowCount - remaining;
-            rowCount += numRowsRead;
+            rowCount += toIntExact(numRowsRead);
             if (pageOffset >= currentPage.numRows()) {
                 globalRowOffset += currentPage.numRows();
                 advancePage();

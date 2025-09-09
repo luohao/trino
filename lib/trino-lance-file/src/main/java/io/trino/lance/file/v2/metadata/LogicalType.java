@@ -14,6 +14,7 @@
 package io.trino.lance.file.v2.metadata;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public sealed interface LogicalType
@@ -34,7 +35,7 @@ public sealed interface LogicalType
     {
         requireNonNull(type, "type is null");
         checkArgument(!type.isEmpty(), "type is empty");
-        String[] components = type.toUpperCase().split(":");
+        String[] components = type.toUpperCase(ENGLISH).split(":");
         LogicalTypeKind kind = LogicalTypeKind.valueOf(components[0]);
         return switch (kind) {
             case INT8 -> Int8Type.INT8_TYPE;

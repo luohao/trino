@@ -18,7 +18,6 @@ import io.trino.lance.file.v2.metadata.ColumnMetadata;
 import io.trino.lance.file.v2.metadata.Field;
 import io.trino.lance.file.v2.reader.RepetitionDefinitionUnraveler.BlockPositions;
 import io.trino.memory.context.AggregatedMemoryContext;
-import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.ArrayBlock;
 import io.trino.spi.block.Block;
 
@@ -26,14 +25,13 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 
 public class ListColumnReader
         implements ColumnReader
 {
-    private final Field field;
     private final ColumnReader childColumnReader;
-    private final LocalMemoryContext localMemoryContext;
 
     private int nextBatchSize;
 
@@ -45,9 +43,7 @@ public class ListColumnReader
     {
         requireNonNull(field, "field is null");
         checkArgument(field.getChildren().size() == 1, "list should have only one child filed");
-        this.field = field;
         this.childColumnReader = ColumnReader.createColumnReader(dataSource, field.getChildren().getFirst(), columnMetadata, ranges, memoryContext);
-        this.localMemoryContext = memoryContext.newLocalMemoryContext(ListColumnReader.class.getSimpleName());
     }
 
     @Override
@@ -63,8 +59,8 @@ public class ListColumnReader
         DecodedPage decodedChild = childColumnReader.read();
         RepetitionDefinitionUnraveler unraveler = decodedChild.getUnraveler();
         BlockPositions positions = unraveler.calculateOffsets();
-        int count = positions.offsets().length - 1;
-        Block arrayBlock = ArrayBlock.fromElementBlock(count, positions.nulls(), positions.offsets(), decodedChild.getBlock());
+        verify(nextBatchSize == positions.offsets().length - 1);
+        Block arrayBlock = ArrayBlock.fromElementBlock(nextBatchSize, positions.nulls(), positions.offsets(), decodedChild.getBlock());
         return new DecodedPage(arrayBlock, unraveler);
     }
 }

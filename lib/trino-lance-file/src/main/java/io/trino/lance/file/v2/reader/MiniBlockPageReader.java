@@ -59,7 +59,6 @@ public class MiniBlockPageReader
     private final List<RepDefLayer> layers;
     private final int maxVisibleDefinition;
     private final long numBuffers;
-    private final List<DiskRange> bufferOffsets;
     // total number of rows in this page
     private final long numRows;
     private final List<ChunkMetadata> chunks;
@@ -89,7 +88,6 @@ public class MiniBlockPageReader
         this.layers = layout.layers();
         this.maxVisibleDefinition = layers.stream().takeWhile(layer -> !layer.isList()).mapToInt(RepDefLayer::numDefLevels).sum();
         this.numBuffers = layout.numBuffers();
-        this.bufferOffsets = bufferOffsets;
         this.numRows = numRows;
         try {
             // build chunk meta
@@ -499,8 +497,7 @@ public class MiniBlockPageReader
             this.numValues = numValues;
             // decode header
             int offset = 0;
-            // FIXME: whats this used
-            int numLevels = chunk.getUnsignedShort(offset);
+            // skip first 2 bytes which stores number of levels
             offset += 2;
 
             int repetitionSize = 0;

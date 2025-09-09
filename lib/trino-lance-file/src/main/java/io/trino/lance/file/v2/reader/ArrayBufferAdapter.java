@@ -22,6 +22,7 @@ public abstract class ArrayBufferAdapter<T>
 {
     protected abstract int getLength(T buffer);
 
+    @Override
     public T merge(List<T> buffers)
     {
         long totalSize = 0;
