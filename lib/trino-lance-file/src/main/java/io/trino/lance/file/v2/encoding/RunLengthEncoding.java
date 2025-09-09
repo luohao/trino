@@ -64,7 +64,6 @@ public class RunLengthEncoding
     {
         checkArgument(proto.getValues().hasFlat(), "value buffer only supports flat encoding");
         checkArgument(proto.getRunLengths().hasFlat(), "length buffer only supports flat encoding");
-        build.buf.gen.lance.encodings21.Flat lengthEncoding = proto.getRunLengths().getFlat();
         build.buf.gen.lance.encodings21.Flat valueEncoding = proto.getValues().getFlat();
         return new RunLengthEncoding(toIntExact(valueEncoding.getBitsPerValue()));
     }

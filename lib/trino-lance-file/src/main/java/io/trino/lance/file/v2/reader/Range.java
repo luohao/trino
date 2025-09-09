@@ -35,11 +35,6 @@ public record Range(long start, long end)
         return end - start;
     }
 
-    public Range clone()
-    {
-        return new Range(start, end);
-    }
-
     @Override
     public int hashCode()
     {

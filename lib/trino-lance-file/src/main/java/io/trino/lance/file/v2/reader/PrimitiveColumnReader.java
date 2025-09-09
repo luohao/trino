@@ -38,12 +38,10 @@ public class PrimitiveColumnReader
         implements ColumnReader
 {
     private final LanceDataSource dataSource;
-    private final ColumnMetadata columnMetadata;
     private final Type type;
     private final List<PageMetadata> pages;
     private final List<Range> ranges;
     private final AggregatedMemoryContext aggregatedMemoryContext;
-    private final LocalMemoryContext localMemoryContext;
 
     private PageReader pageReader;
     private int nextBatchSize;
@@ -64,11 +62,9 @@ public class PrimitiveColumnReader
         requireNonNull(field, "field is null");
         this.dataSource = requireNonNull(dataSource, "dataSource is null");
         this.type = field.toTrinoType();
-        this.columnMetadata = requireNonNull(columnMetadata, "columnMetadata is null");
         this.pages = requireNonNull(columnMetadata.getPages(), "pages is null");
         this.ranges = requireNonNull(ranges, "ranges is null");
         this.aggregatedMemoryContext = requireNonNull(memoryContext, "memoryContext is null");
-        this.localMemoryContext = requireNonNull(memoryContext, "memoryContext is null").newLocalMemoryContext(PrimitiveColumnReader.class.getSimpleName());
 
         this.globalRowOffset = 0;
         this.pageIndex = 0;

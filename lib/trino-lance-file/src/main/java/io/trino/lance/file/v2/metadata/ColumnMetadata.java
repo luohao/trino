@@ -33,7 +33,7 @@ public class ColumnMetadata
 
     public ColumnMetadata(int index, List<PageMetadata> pages, List<DiskRange> bufferOffsets)
     {
-        this.index = requireNonNull(index, "index is null");
+        this.index = index;
         this.pages = requireNonNull(pages, "pages is null");
         this.bufferOffsets = requireNonNull(bufferOffsets, "bufferOffsets is null");
     }

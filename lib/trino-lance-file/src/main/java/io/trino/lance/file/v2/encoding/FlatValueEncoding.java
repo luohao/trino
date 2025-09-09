@@ -98,13 +98,14 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 1);
-            this.slice = slices.get(0);
+            this.slice = slices.getFirst();
             this.numValues = numValues;
         }
 
         @Override
         public void read(int sourceIndex, byte[] destination, int destinationIndex, int length)
         {
+            checkArgument(sourceIndex + length <= numValues);
             slice.getBytes(sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -120,13 +121,14 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 2);
-            this.slice = slices.get(0);
+            this.slice = slices.getFirst();
             this.numValues = numValues;
         }
 
         @Override
         public void read(int sourceIndex, short[] destination, int destinationIndex, int length)
         {
+            checkArgument(sourceIndex + length <= numValues);
             slice.getShorts(sourceIndex * Short.BYTES, destination, destinationIndex, length);
         }
     }
@@ -142,13 +144,14 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 4);
-            this.slice = slices.get(0);
+            this.slice = slices.getFirst();
             this.numValues = numValues;
         }
 
         @Override
         public void read(int sourceIndex, int[] destination, int destinationIndex, int length)
         {
+            checkArgument(sourceIndex + length <= numValues);
             slice.getInts(sourceIndex * Integer.BYTES, destination, destinationIndex, length);
         }
     }
@@ -164,13 +167,14 @@ public class FlatValueEncoding
         {
             checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 8);
-            this.slice = slices.get(0);
+            this.slice = slices.getFirst();
             this.numValues = numValues;
         }
 
         @Override
         public void read(int sourceIndex, long[] destination, int destinationIndex, int length)
         {
+            checkArgument(sourceIndex + length <= numValues);
             slice.getLongs(sourceIndex * Long.BYTES, destination, destinationIndex, length);
         }
     }

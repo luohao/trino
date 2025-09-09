@@ -21,8 +21,8 @@ public record PageMetadata(long numRows, long priority, PageLayout layout, List<
 {
     public PageMetadata(long numRows, long priority, PageLayout layout, List<DiskRange> bufferOffsets)
     {
-        this.numRows = requireNonNull(numRows, "numRows is null");
-        this.priority = requireNonNull(priority, "priority is null");
+        this.numRows = numRows;
+        this.priority = priority;
         this.layout = requireNonNull(layout, "layout is null");
         this.bufferOffsets = requireNonNull(bufferOffsets, "bufferOffsets is null");
     }

@@ -49,9 +49,9 @@ public record MiniBlockLayout(LanceEncoding valueEncoding,
         this.dictionaryEncoding = requireNonNull(dictionaryEncoding, "dictionaryEncoding is null");
         this.numDictionaryItems = requireNonNull(numDictionaryItems, "numDictionaryItems is null");
         this.layers = requireNonNull(layers, "layers is null");
-        this.numBuffers = requireNonNull(numBuffers, "numBuffers is null");
-        this.repIndexDepth = requireNonNull(repIndexDepth, "repIndexDepth is null");
-        this.numItems = requireNonNull(numItems, "numItems is null");
+        this.numBuffers = numBuffers;
+        this.repIndexDepth = repIndexDepth;
+        this.numItems = numItems;
     }
 
     public static MiniBlockLayout fromProto(build.buf.gen.lance.encodings21.MiniBlockLayout proto)

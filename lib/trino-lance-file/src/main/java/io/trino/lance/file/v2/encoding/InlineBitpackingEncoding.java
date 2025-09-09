@@ -137,7 +137,7 @@ public class InlineBitpackingEncoding
         @Override
         public void read(int sourceIndex, byte[] destination, int destinationIndex, int length)
         {
-            checkArgument(sourceIndex + length <= data.length);
+            checkArgument(sourceIndex + length <= numValues);
             System.arraycopy(data, sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -163,6 +163,7 @@ public class InlineBitpackingEncoding
         @Override
         public void read(int sourceIndex, short[] destination, int destinationIndex, int length)
         {
+            checkArgument(sourceIndex + length <= numValues);
             System.arraycopy(data, sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -188,6 +189,7 @@ public class InlineBitpackingEncoding
         @Override
         public void read(int sourceIndex, int[] destination, int destinationIndex, int length)
         {
+            checkArgument(sourceIndex + length <= numValues);
             System.arraycopy(data, sourceIndex, destination, destinationIndex, length);
         }
     }
@@ -213,8 +215,7 @@ public class InlineBitpackingEncoding
         @Override
         public void read(int sourceIndex, long[] destination, int destinationIndex, int length)
         {
-            checkArgument(sourceIndex + length <= data.length);
-            checkArgument(destinationIndex + length <= destination.length);
+            checkArgument(sourceIndex + length <= numValues);
             System.arraycopy(data, sourceIndex, destination, destinationIndex, length);
         }
     }

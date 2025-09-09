@@ -58,14 +58,12 @@ public class LanceReader
     public static final int FOOTER_LEN = 40;
     public static final int MAX_BATCH_SIZE = 8 * 1024;
 
-    private final LanceDataSource dataSource;
     private final Footer footer;
     private final FileVersion fileVersion;
     private final Map<Integer, ColumnMetadata> columnMetadata;
     private final List<Field> fields;
     private final ColumnReader[] columnReaders;
     private final long numRows;
-    private final AggregatedMemoryContext memoryUsage;
 
     private int currentPageId;
     private long currentRowId;
@@ -77,12 +75,10 @@ public class LanceReader
             AggregatedMemoryContext memoryUsage)
             throws IOException
     {
-        this.dataSource = requireNonNull(dataSource, "dataSource is null");
         // read footer
         Slice data = dataSource.readTail(FOOTER_LEN);
         this.footer = Footer.from(data);
         this.fileVersion = FileVersion.fromMajorMinor(footer.getMajorVersion(), footer.getMinorVersion());
-        this.memoryUsage = memoryUsage.newAggregatedMemoryContext();
 
         // read Global Buffer Offset Table
         Slice bufferOffsetTableSlice = dataSource.readFully(footer.getGlobalBuffOffsetStart(), footer.getNumGlobalBuffers() * BUFFER_DESCRIPTOR_SIZE);

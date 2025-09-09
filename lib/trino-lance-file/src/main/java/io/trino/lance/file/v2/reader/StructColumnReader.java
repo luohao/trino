@@ -30,20 +30,16 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 public class StructColumnReader
         implements ColumnReader
 {
-    private final Field field;
     private final ColumnReader[] childColumnReaders;
-    private final LocalMemoryContext localMemoryContext;
     private int nextBatchSize;
 
     public StructColumnReader(LanceDataSource dataSource, Field field, Map<Integer, ColumnMetadata> columnMetadata, List<Range> ranges, AggregatedMemoryContext memoryContext)
     {
-        this.field = field;
         ColumnReader[] childReaders = new ColumnReader[field.getChildren().size()];
         for (int i = 0; i < childReaders.length; i++) {
             childReaders[i] = ColumnReader.createColumnReader(dataSource, field.getChildren().get(i), columnMetadata, ranges, memoryContext);
         }
         this.childColumnReaders = childReaders;
-        this.localMemoryContext = memoryContext.newLocalMemoryContext(StructColumnReader.class.getSimpleName());
     }
 
     @Override

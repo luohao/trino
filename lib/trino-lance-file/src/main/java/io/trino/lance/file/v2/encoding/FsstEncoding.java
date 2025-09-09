@@ -24,6 +24,7 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.trino.lance.file.v2.reader.BinaryBufferAdapter.VARIABLE_BINARY_BUFFER_ADAPTER;
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class FsstEncoding
@@ -43,7 +44,7 @@ public class FsstEncoding
 
     public FsstEncoding(LanceEncoding valueEncoding, Slice symbolTableSlice)
     {
-        checkArgument(symbolTableSlice.length() == FSST_SYMBOL_TABLE_SIZE, "FSST symbol table must have %d bytes", FSST_SYMBOL_TABLE_SIZE);
+        checkArgument(symbolTableSlice.length() == FSST_SYMBOL_TABLE_SIZE, format("FSST symbol table must have %d bytes", FSST_SYMBOL_TABLE_SIZE));
         checkArgument((symbolTableSlice.getLong(0) & FSST_SYMBOL_TABLE_MAGIC) == FSST_SYMBOL_TABLE_MAGIC, "Invalid header in FSST symbol table");
         this.header = symbolTableSlice.getLong(0);
         this.numSymbols = toIntExact(header & 0xFF);

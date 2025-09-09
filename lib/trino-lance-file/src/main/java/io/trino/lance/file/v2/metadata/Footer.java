@@ -38,13 +38,13 @@ public final class Footer
 
     public Footer(long columnMetadataStart, long columnMetadataOffsetsStart, long globalBuffOffsetStart, int numGlobalBuffers, int numColumns, short majorVersion, short minorVersion)
     {
-        this.columnMetadataStart = requireNonNull(columnMetadataStart, "columnMetaStart is null");
-        this.columnMetadataOffsetsStart = requireNonNull(columnMetadataOffsetsStart, "columnMetaOffsetsStart is null");
-        this.globalBuffOffsetStart = requireNonNull(globalBuffOffsetStart, "globalBuffOffsetStart is null");
-        this.numGlobalBuffers = requireNonNull(numGlobalBuffers, "numGlobalBuffers is null");
-        this.numColumns = requireNonNull(numColumns, "numColumns is null");
-        this.majorVersion = requireNonNull(majorVersion, "majorVersion is null");
-        this.minorVersion = requireNonNull(minorVersion, "minorVersion is null");
+        this.columnMetadataStart = columnMetadataStart;
+        this.columnMetadataOffsetsStart = columnMetadataOffsetsStart;
+        this.globalBuffOffsetStart = globalBuffOffsetStart;
+        this.numGlobalBuffers = numGlobalBuffers;
+        this.numColumns = numColumns;
+        this.majorVersion = majorVersion;
+        this.minorVersion = minorVersion;
     }
 
     public static Footer from(Slice data)

@@ -34,11 +34,11 @@ public final class FullZipLayout
             int numVisibleItems,
             List<RepDefLayer> repDefLayers)
     {
-        this.numRepBits = requireNonNull(numRepBits, "numRepBits is null");
-        this.numDeflBits = requireNonNull(numDeflBits, "numDeflBits is null");
+        this.numRepBits = numRepBits;
+        this.numDeflBits = numDeflBits;
         this.block = requireNonNull(block, "chunkSize is null");
-        this.numItems = requireNonNull(numItems, "numItems is null");
-        this.numVisibleItems = requireNonNull(numVisibleItems, "numVisibleItems is null");
+        this.numItems = numItems;
+        this.numVisibleItems = numVisibleItems;
         this.repDefLayers = requireNonNull(repDefLayers, "repDefLayers is null");
     }
 
@@ -56,6 +56,36 @@ public final class FullZipLayout
                 proto.getNumItems(),
                 proto.getNumVisibleItems(),
                 RepDefLayer.fromProtoList(proto.getLayersList()));
+    }
+
+    public int getNumRepBits()
+    {
+        return numRepBits;
+    }
+
+    public int getNumDeflBits()
+    {
+        return numDeflBits;
+    }
+
+    public Block getBlock()
+    {
+        return block;
+    }
+
+    public int getNumItems()
+    {
+        return numItems;
+    }
+
+    public int getNumVisibleItems()
+    {
+        return numVisibleItems;
+    }
+
+    public List<RepDefLayer> getRepDefLayers()
+    {
+        return repDefLayers;
     }
 
     public sealed interface Block

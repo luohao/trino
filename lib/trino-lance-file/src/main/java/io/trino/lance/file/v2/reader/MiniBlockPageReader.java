@@ -46,10 +46,8 @@ public class MiniBlockPageReader
         implements PageReader
 {
     public static final int MINIBLOCK_ALIGNMENT = 8;
-    public static final int[] EMPTY_INT_ARRAY = new int[0];
 
     private final LanceDataSource dataSource;
-    private final Type type;
     private final Optional<LanceEncoding> repetitionEncoding;
     private final Optional<LanceEncoding> definitionEncoding;
     private final Optional<LanceEncoding> dictionaryEncoding;
@@ -82,7 +80,6 @@ public class MiniBlockPageReader
             AggregatedMemoryContext memoryContext)
     {
         this.dataSource = dataSource;
-        this.type = type;
         this.repetitionEncoding = layout.repetitionEncoding();
         this.definitionEncoding = layout.definitionEncoding();
         this.dictionaryEncoding = layout.dictionaryEncoding();
@@ -453,6 +450,11 @@ public class MiniBlockPageReader
             data[i] = slice.getUnsignedShort(i * 2);
         }
         return data;
+    }
+
+    public long getNumRows()
+    {
+        return numRows;
     }
 
     public enum PreambleAction
