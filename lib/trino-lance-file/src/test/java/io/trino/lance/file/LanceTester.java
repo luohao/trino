@@ -446,46 +446,48 @@ public class LanceTester
     {
         ArrowType arrowType = childField.getType();
 
-        if (arrowType instanceof ArrowType.Int) {
-            ArrowType.Int intType = (ArrowType.Int) arrowType;
-            Number num = (Number) value;
-            switch (intType.getBitWidth()) {
-                case 8:
-                    ((TinyIntVector) childVector).setSafe(index, num.byteValue());
-                    break;
-                case 16:
-                    ((SmallIntVector) childVector).setSafe(index, num.shortValue());
-                    break;
-                case 32:
-                    ((IntVector) childVector).setSafe(index, num.intValue());
-                    break;
-                case 64:
-                    ((BigIntVector) childVector).setSafe(index, num.longValue());
-                    break;
+        switch (arrowType) {
+            case ArrowType.Int intType -> {
+                Number num = (Number) value;
+                switch (intType.getBitWidth()) {
+                    case 8:
+                        ((TinyIntVector) childVector).setSafe(index, num.byteValue());
+                        break;
+                    case 16:
+                        ((SmallIntVector) childVector).setSafe(index, num.shortValue());
+                        break;
+                    case 32:
+                        ((IntVector) childVector).setSafe(index, num.intValue());
+                        break;
+                    case 64:
+                        ((BigIntVector) childVector).setSafe(index, num.longValue());
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unsupported bit width: " + intType.getBitWidth());
+                }
             }
-        }
-        else if (arrowType instanceof ArrowType.FloatingPoint) {
-            ArrowType.FloatingPoint floatType = (ArrowType.FloatingPoint) arrowType;
-            Number num = (Number) value;
-            switch (floatType.getPrecision()) {
-                case SINGLE:
-                    ((Float4Vector) childVector).setSafe(index, num.floatValue());
-                    break;
-                case DOUBLE:
-                    ((Float8Vector) childVector).setSafe(index, num.doubleValue());
-                    break;
+            case ArrowType.FloatingPoint floatType -> {
+                Number num = (Number) value;
+                switch (floatType.getPrecision()) {
+                    case SINGLE:
+                        ((Float4Vector) childVector).setSafe(index, num.floatValue());
+                        break;
+                    case DOUBLE:
+                        ((Float8Vector) childVector).setSafe(index, num.doubleValue());
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unsupported precision: " + floatType.getPrecision());
+                }
             }
-        }
-        else if (arrowType instanceof ArrowType.Utf8) {
-            String str = value.toString();
-            ((VarCharVector) childVector).setSafe(index, str.getBytes(StandardCharsets.UTF_8));
-        }
-        else if (arrowType instanceof ArrowType.Binary) {
-            byte[] bytes = (byte[]) value;
-            ((VarBinaryVector) childVector).setSafe(index, bytes);
-        }
-        else {
-            throw new UnsupportedOperationException("Unsupported ArrowType " + arrowType + " in struct field");
+            case ArrowType.Utf8 _ -> {
+                String str = value.toString();
+                ((VarCharVector) childVector).setSafe(index, str.getBytes(StandardCharsets.UTF_8));
+            }
+            case ArrowType.Binary _ -> {
+                byte[] bytes = (byte[]) value;
+                ((VarBinaryVector) childVector).setSafe(index, bytes);
+            }
+            case null, default -> throw new UnsupportedOperationException("Unsupported ArrowType " + arrowType + " in struct field");
         }
     }
 
