@@ -48,8 +48,14 @@ public class TypeUtil
     public static <T> T visit(Field field, FieldVisitor<T> visitor)
     {
         return switch (LogicalType.from(field.getLogicalType())) {
-            case LogicalType.Int8Type _, LogicalType.Int16Type _, LogicalType.Int32Type _, LogicalType.Int64Type _, LogicalType.FloatType _, LogicalType.DoubleType _,
-                 LogicalType.StringType _, LogicalType.BinaryType _ -> visitor.primitive(field);
+            case LogicalType.Int8Type _,
+                 LogicalType.Int16Type _,
+                 LogicalType.Int32Type _,
+                 LogicalType.Int64Type _,
+                 LogicalType.FloatType _,
+                 LogicalType.DoubleType _,
+                 LogicalType.StringType _,
+                 LogicalType.BinaryType _ -> visitor.primitive(field);
             case LogicalType.StructType _ -> {
                 List<T> results = new ArrayList<>(field.getChildren().size());
                 for (Field child : field.getChildren()) {

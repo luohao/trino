@@ -53,14 +53,6 @@ public class InlineBitpackingEncoding
     }
 
     @Override
-    public ValueBlock decodeMiniBlock(List<Slice> slices, int count)
-    {
-        checkArgument(slices.size() == 1);
-        Slice slice = slices.get(0);
-        return decode(slice, count);
-    }
-
-    @Override
     public MiniBlockDecoder getMiniBlockDecoder()
     {
         return switch (uncompressedBitWidth) {

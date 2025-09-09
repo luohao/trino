@@ -88,12 +88,20 @@ public class DirectoryNamespace
     }
 
     @Override
-    public BaseTable loadTable(ConnectorSession session, SchemaTableName schemaTableName)
+    public Optional<BaseTable> loadTable(ConnectorSession session, SchemaTableName schemaTableName)
     {
         checkArgument(schemaTableName.getSchemaName().equals(DEFAULT_NAMESPACE));
         Location tableLocation = Location.of(warehouseLocation).appendPath(schemaTableName.getTableName() + BaseTable.LANCE_SUFFIX);
         TrinoFileSystem fileSystem = fileSystemFactory.create(session);
-        // FIXME: should validate table exists
-        return new BaseTable(schemaTableName.getSchemaName(), schemaTableName.getTableName(), fileSystem, tableLocation);
+        try {
+            Optional<Boolean> tableExists = fileSystem.directoryExists(tableLocation);
+            if (tableExists.isPresent() && tableExists.get()) {
+                return Optional.of(new BaseTable(schemaTableName.getSchemaName(), schemaTableName.getTableName(), fileSystem, tableLocation));
+            }
+            return Optional.empty();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(format("Failed to check if table exists under %s:", warehouseLocation), e);
+        }
     }
 }

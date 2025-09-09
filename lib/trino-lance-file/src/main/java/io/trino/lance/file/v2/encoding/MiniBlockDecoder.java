@@ -22,9 +22,4 @@ public interface MiniBlockDecoder<T>
     void init(List<Slice> slices, int numValues);
 
     void read(int sourceIndex, T destination, int destinationIndex, int length);
-
-    interface MiniBlockDecoderProvider<T>
-    {
-        MiniBlockDecoder<T> create(LanceEncoding encoding);
-    }
 }

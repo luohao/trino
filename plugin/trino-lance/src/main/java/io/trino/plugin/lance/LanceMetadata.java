@@ -34,6 +34,7 @@ import java.util.Optional;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static io.trino.plugin.lance.LanceErrorCode.LANCE_TABLE_NOT_FOUND;
 import static io.trino.spi.StandardErrorCode.NOT_SUPPORTED;
 import static io.trino.spi.type.BigintType.BIGINT;
 import static java.util.Objects.requireNonNull;
@@ -87,7 +88,11 @@ public class LanceMetadata
         if (startVersion.isPresent()) {
             throw new TrinoException(NOT_SUPPORTED, "Read table with startRowPosition version is not supported");
         }
-        BaseTable baseTable = catalog.loadTable(session, tableName);
+        Optional<BaseTable> loadedTable = catalog.loadTable(session, tableName);
+        if (loadedTable.isEmpty()) {
+            throw new TrinoException(LANCE_TABLE_NOT_FOUND, "Table not found: " + tableName);
+        }
+        BaseTable baseTable = loadedTable.get();
         Optional<Long> version;
         if (endVersion.isPresent()) {
             version = Optional.of(getSnapshotIdFromVersion(endVersion.get()));

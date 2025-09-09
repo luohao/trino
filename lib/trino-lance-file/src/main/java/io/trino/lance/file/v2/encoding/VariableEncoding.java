@@ -38,15 +38,6 @@ public class VariableEncoding
     }
 
     @Override
-    public ValueBlock decodeMiniBlock(List<Slice> slices, int count)
-    {
-        checkArgument(slices.size() == 1);
-        Slice slice = slices.get(0);
-        int[] offsets = slice.getInts(0, count + 1);
-        return new VariableWidthBlock(count, slice, offsets, Optional.empty());
-    }
-
-    @Override
     public MiniBlockDecoder getMiniBlockDecoder()
     {
         return new VariableBinaryDecoder();

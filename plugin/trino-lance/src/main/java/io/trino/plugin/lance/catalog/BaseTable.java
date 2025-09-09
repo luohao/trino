@@ -46,7 +46,6 @@ public class BaseTable
 
     private final String schema;
     private final String name;
-    // FIXME: should maybe sue factory instead of filesystem instance
     private final TrinoFileSystem fileSystem;
     private final Location tableLocation;
 

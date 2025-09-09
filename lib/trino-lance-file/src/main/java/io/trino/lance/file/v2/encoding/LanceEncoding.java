@@ -17,8 +17,6 @@ import io.airlift.slice.Slice;
 import io.trino.lance.file.v2.reader.BufferAdapter;
 import io.trino.spi.block.ValueBlock;
 
-import java.util.List;
-
 import static java.lang.Math.toIntExact;
 
 public interface LanceEncoding
@@ -39,11 +37,6 @@ public interface LanceEncoding
     default ValueBlock decodeBlock(Slice slice, int count)
     {
         throw new UnsupportedOperationException("decodeBlock is not supported for " + getClass().getSimpleName());
-    }
-
-    default ValueBlock decodeMiniBlock(List<Slice> slices, int count)
-    {
-        throw new UnsupportedOperationException("decodeMiniBlock is not supported for " + getClass().getSimpleName());
     }
 
     <T> BufferAdapter<T> getBufferAdapter();

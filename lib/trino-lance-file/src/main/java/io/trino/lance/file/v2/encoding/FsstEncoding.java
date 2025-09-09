@@ -93,7 +93,7 @@ public class FsstEncoding
         @Override
         public void read(int sourceIndex, BinaryBuffer destination, int destinationIndex, int length)
         {
-            // TODO: performance optimizations with vectorization, loop unrolling and less memory copy
+            // TODO: performance optimizations with vectorization, loop unrolling and reduced memory copy
             BinaryBuffer inputs = VARIABLE_BINARY_BUFFER_ADAPTER.createBuffer(length);
             valueDecoder.read(sourceIndex, inputs, destinationIndex, length);
             for (int i = 0; i < length; i++) {

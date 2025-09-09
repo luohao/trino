@@ -15,7 +15,7 @@ package io.trino.lance.file.v2.metadata;
 
 public enum FileVersion
 {
-    // Only v2.1+ formats are supported.
+    // Only v2.1+ formats are supported
     V2_1;
 
     public static FileVersion fromMajorMinor(int major, int minor)

@@ -23,12 +23,12 @@ import static io.trino.spi.ErrorType.USER_ERROR;
 public enum LanceErrorCode
         implements ErrorCodeSupplier
 {
-    // FIXME: split into LanceErrorCode and LanceErrorCode
-    LANCE_INVALID_METADATA(1, EXTERNAL),
-    LANCE_BAD_DATA(2, EXTERNAL),
-    LANCE_SPLIT_ERROR(3, EXTERNAL),
-    LANCE_INVALID_VERSION_NUMBER(11, USER_ERROR)
-    /**/;
+    LANCE_TABLE_NOT_FOUND(1, EXTERNAL),
+    LANCE_INVALID_METADATA(2, EXTERNAL),
+    LANCE_BAD_DATA(3, EXTERNAL),
+    LANCE_SPLIT_ERROR(4, EXTERNAL),
+    LANCE_INVALID_VERSION_NUMBER(11, USER_ERROR);
+
     private final ErrorCode errorCode;
 
     LanceErrorCode(int code, ErrorType errorType)

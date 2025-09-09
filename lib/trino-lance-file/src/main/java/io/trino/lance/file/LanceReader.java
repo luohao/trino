@@ -142,7 +142,6 @@ public class LanceReader
                 .toArray(ColumnReader[]::new);
     }
 
-    // FIXME: refactor as lancedb also needs this utility
     public static List<Field> toFields(build.buf.gen.lance.file.Schema schema)
     {
         return toFields(schema.getFieldsList());

@@ -36,7 +36,7 @@ public class Fragment
     {
         this.id = id;
         this.files = requireNonNull(files, "files is null");
-        this.physicalRows = requireNonNull(physicalRows, "physicalRows is null");
+        this.physicalRows = physicalRows;
     }
 
     public static Fragment from(build.buf.gen.lance.table.DataFragment proto)

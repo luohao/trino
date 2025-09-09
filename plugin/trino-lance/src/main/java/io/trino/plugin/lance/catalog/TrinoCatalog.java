@@ -25,5 +25,5 @@ public interface TrinoCatalog
 
     List<SchemaTableName> listTables(ConnectorSession session, Optional<String> namespace);
 
-    BaseTable loadTable(ConnectorSession session, SchemaTableName schemaTableName);
+    Optional<BaseTable> loadTable(ConnectorSession session, SchemaTableName schemaTableName);
 }

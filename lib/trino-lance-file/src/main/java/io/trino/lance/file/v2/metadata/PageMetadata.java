@@ -17,7 +17,6 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-// FIXME: priority is confusing when not using a priority queue for IO scheduling, use a better name or drop it from PageMetadata
 public record PageMetadata(long numRows, long priority, PageLayout layout, List<DiskRange> bufferOffsets)
 {
     public PageMetadata(long numRows, long priority, PageLayout layout, List<DiskRange> bufferOffsets)

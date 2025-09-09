@@ -50,8 +50,8 @@ public class Manifest
     {
         this.fields = requireNonNull(fields, "fields is null");
         this.fragments = requireNonNull(fragments, "fragments is null");
-        this.version = requireNonNull(version, "version is null");
-        this.maxFragmentId = requireNonNull(maxFragmentId, "maxFragmentId is null");
+        this.version = version;
+        this.maxFragmentId = maxFragmentId;
     }
 
     public static Manifest from(Slice slice)

@@ -53,16 +53,6 @@ public class FlatValueEncoding
     }
 
     @Override
-    public ValueBlock decodeMiniBlock(List<Slice> slices, int count)
-    {
-        // TODO: support fixed size list which will have more than one buffer
-        checkArgument(slices.size() == 1);
-        checkArgument(count == slices.get(0).length() / bytesPerValue);
-
-        return decode(slices.get(0), count);
-    }
-
-    @Override
     public BufferAdapter getBufferAdapter()
     {
         return switch (bytesPerValue) {

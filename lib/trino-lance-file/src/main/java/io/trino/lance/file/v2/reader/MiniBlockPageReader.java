@@ -42,7 +42,6 @@ import static io.trino.lance.file.v2.metadata.RepDefLayer.NULLABLE_ITEM;
 import static io.trino.lance.file.v2.reader.IntArrayBufferAdapter.INT_ARRAY_BUFFER_ADAPTER;
 import static java.lang.Math.toIntExact;
 
-// map to DecodePageTask::decode()
 public class MiniBlockPageReader
         implements PageReader
 {

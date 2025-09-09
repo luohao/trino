@@ -19,7 +19,12 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 public enum RepDefLayer
 {
-    ALL_VALID_ITEM, ALL_VALID_LIST, NULLABLE_ITEM, NULLABLE_LIST, EMPTYABLE_LIST, NULLABLE_AND_EMPTYABLE_LIST;
+    ALL_VALID_ITEM,
+    ALL_VALID_LIST,
+    NULLABLE_ITEM,
+    NULLABLE_LIST,
+    EMPTYABLE_LIST,
+    NULLABLE_AND_EMPTYABLE_LIST;
 
     public static RepDefLayer fromProto(build.buf.gen.lance.encodings21.RepDefLayer proto)
     {
