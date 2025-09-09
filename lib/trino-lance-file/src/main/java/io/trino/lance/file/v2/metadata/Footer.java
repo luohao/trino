@@ -16,7 +16,6 @@ package io.trino.lance.file.v2.metadata;
 import io.airlift.slice.Slice;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
 
 public final class Footer
 {

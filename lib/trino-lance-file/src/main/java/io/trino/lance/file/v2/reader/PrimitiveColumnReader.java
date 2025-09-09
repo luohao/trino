@@ -21,7 +21,6 @@ import io.trino.lance.file.v2.metadata.MiniBlockLayout;
 import io.trino.lance.file.v2.metadata.PageLayout;
 import io.trino.lance.file.v2.metadata.PageMetadata;
 import io.trino.memory.context.AggregatedMemoryContext;
-import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.BlockBuilder;
 import io.trino.spi.type.Type;

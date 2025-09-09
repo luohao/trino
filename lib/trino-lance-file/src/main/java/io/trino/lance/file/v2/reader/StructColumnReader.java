@@ -17,7 +17,6 @@ import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.v2.metadata.ColumnMetadata;
 import io.trino.lance.file.v2.metadata.Field;
 import io.trino.memory.context.AggregatedMemoryContext;
-import io.trino.memory.context.LocalMemoryContext;
 import io.trino.spi.block.Block;
 import io.trino.spi.block.RowBlock;
 

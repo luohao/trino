@@ -50,7 +50,6 @@ import static io.trino.lance.file.v2.metadata.DiskRange.BUFFER_DESCRIPTOR_SIZE;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.checkIndex;
-import static java.util.Objects.requireNonNull;
 
 public class LanceReader
         implements Closeable
