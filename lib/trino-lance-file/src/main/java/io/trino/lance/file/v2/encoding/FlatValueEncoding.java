@@ -68,10 +68,22 @@ public class FlatValueEncoding
     public MiniBlockDecoder getMiniBlockDecoder()
     {
         return switch (bytesPerValue) {
-            case 1 -> new FlatByteDecoder();
-            case 2 -> new FlatShortDecoder();
-            case 4 -> new FlatIntDecoder();
-            case 8 -> new FlatLongDecoder();
+            case 1 -> new ByteMiniBlockDecoder();
+            case 2 -> new ShortMiniBlockDecoder();
+            case 4 -> new IntMiniBlockDecoder();
+            case 8 -> new LongMiniBlockDecoder();
+            default -> throw new IllegalArgumentException("Invalid bytesPerValue: " + bytesPerValue);
+        };
+    }
+
+    @Override
+    public BlockDecoder getBlockDecoder()
+    {
+        return switch (bytesPerValue) {
+            case 1 -> new ByteBlockDecoder();
+            case 2 -> new ShortBlockDecoder();
+            case 4 -> new IntBlockDecoder();
+            case 8 -> new LongBlockDecoder();
             default -> throw new IllegalArgumentException("Invalid bytesPerValue: " + bytesPerValue);
         };
     }
@@ -87,18 +99,17 @@ public class FlatValueEncoding
         };
     }
 
-    public class FlatByteDecoder
-            implements MiniBlockDecoder<byte[]>
+    public class ByteBlockDecoder
+            implements BlockDecoder<byte[]>
     {
         private Slice slice;
         private int numValues;
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 1);
-            this.slice = slices.getFirst();
+            this.slice = slice;
             this.numValues = numValues;
         }
 
@@ -110,18 +121,17 @@ public class FlatValueEncoding
         }
     }
 
-    public class FlatShortDecoder
-            implements MiniBlockDecoder<short[]>
+    public class ShortBlockDecoder
+            implements BlockDecoder<short[]>
     {
         private Slice slice;
         private int numValues;
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 2);
-            this.slice = slices.getFirst();
+            this.slice = slice;
             this.numValues = numValues;
         }
 
@@ -133,18 +143,17 @@ public class FlatValueEncoding
         }
     }
 
-    public class FlatIntDecoder
-            implements MiniBlockDecoder<int[]>
+    public class IntBlockDecoder
+            implements BlockDecoder<int[]>
     {
         private Slice slice;
         private int numValues;
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 4);
-            this.slice = slices.getFirst();
+            this.slice = slice;
             this.numValues = numValues;
         }
 
@@ -156,18 +165,17 @@ public class FlatValueEncoding
         }
     }
 
-    public class FlatLongDecoder
-            implements MiniBlockDecoder<long[]>
+    public class LongBlockDecoder
+            implements BlockDecoder<long[]>
     {
         private Slice slice;
         private int numValues;
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
             checkArgument(bytesPerValue == 8);
-            this.slice = slices.getFirst();
+            this.slice = slice;
             this.numValues = numValues;
         }
 
@@ -176,6 +184,82 @@ public class FlatValueEncoding
         {
             checkArgument(sourceIndex + length <= numValues);
             slice.getLongs(sourceIndex * Long.BYTES, destination, destinationIndex, length);
+        }
+    }
+
+    public class ByteMiniBlockDecoder
+            implements MiniBlockDecoder<byte[]>
+    {
+        private final ByteBlockDecoder blockDecoder = new ByteBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, byte[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class ShortMiniBlockDecoder
+            implements MiniBlockDecoder<short[]>
+    {
+        private final ShortBlockDecoder blockDecoder = new ShortBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, short[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class IntMiniBlockDecoder
+            implements MiniBlockDecoder<int[]>
+    {
+        private final IntBlockDecoder blockDecoder = new IntBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, int[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class LongMiniBlockDecoder
+            implements MiniBlockDecoder<long[]>
+    {
+        private final LongBlockDecoder blockDecoder = new LongBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, long[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
         }
     }
 }

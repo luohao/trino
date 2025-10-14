@@ -43,4 +43,9 @@ public interface LanceEncoding
     <T> BufferAdapter<T> getBufferAdapter();
 
     <T> MiniBlockDecoder<T> getMiniBlockDecoder();
+
+    default <T> BlockDecoder<T> getBlockDecoder()
+    {
+        throw new UnsupportedOperationException("getBlockDecoder is not supported for " + getClass().getSimpleName());
+    }
 }

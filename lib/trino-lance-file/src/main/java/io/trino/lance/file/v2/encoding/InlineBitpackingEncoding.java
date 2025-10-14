@@ -56,10 +56,22 @@ public class InlineBitpackingEncoding
     public MiniBlockDecoder getMiniBlockDecoder()
     {
         return switch (uncompressedBitWidth) {
-            case 8 -> new BitPackByteDecoder();
-            case 16 -> new BitPackShortDecoder();
-            case 32 -> new BitPackIntDecoder();
-            case 64 -> new BitPackLongDecoder();
+            case 8 -> new ByteMiniBlockDecoder();
+            case 16 -> new ShortMiniBlockDecoder();
+            case 32 -> new IntMiniBlockDecoder();
+            case 64 -> new LongMiniBlockDecoder();
+            default -> throw new IllegalStateException("Unexpected uncompressedBitWidth: " + uncompressedBitWidth);
+        };
+    }
+
+    @Override
+    public BlockDecoder getBlockDecoder()
+    {
+        return switch (uncompressedBitWidth) {
+            case 8 -> new ByteBlockDecoder();
+            case 16 -> new ShortBlockDecoder();
+            case 32 -> new IntBlockDecoder();
+            case 64 -> new LongBlockDecoder();
             default -> throw new IllegalStateException("Unexpected uncompressedBitWidth: " + uncompressedBitWidth);
         };
     }
@@ -116,19 +128,15 @@ public class InlineBitpackingEncoding
         return uncompressedBitWidth;
     }
 
-    public class BitPackByteDecoder
-            implements MiniBlockDecoder<byte[]>
+    public class ByteBlockDecoder
+            implements BlockDecoder<byte[]>
     {
-        private Slice slice;
         private int numValues;
         private final byte[] data = new byte[MAX_ELEMENTS_PER_CHUNK];
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
-            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
-            this.slice = slices.get(0);
             this.numValues = numValues;
             int bitWidth = slice.getUnsignedByte(0);
             VectorBytePacker.unpack(slice.getBytes(1, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
@@ -142,21 +150,17 @@ public class InlineBitpackingEncoding
         }
     }
 
-    public class BitPackShortDecoder
-            implements MiniBlockDecoder<short[]>
+    public class ShortBlockDecoder
+            implements BlockDecoder<short[]>
     {
-        private Slice slice;
         private int numValues;
         private final short[] data = new short[MAX_ELEMENTS_PER_CHUNK];
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
-            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
-            this.slice = slices.get(0);
             this.numValues = numValues;
-            int bitWidth = slice.getUnsignedShort(0);
+            int bitWidth = slice.getUnsignedByte(0);
             VectorShortPacker.unpack(slice.getShorts(2, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
         }
 
@@ -168,19 +172,15 @@ public class InlineBitpackingEncoding
         }
     }
 
-    public class BitPackIntDecoder
-            implements MiniBlockDecoder<int[]>
+    public class IntBlockDecoder
+            implements BlockDecoder<int[]>
     {
-        private Slice slice;
         private int numValues;
         private final int[] data = new int[MAX_ELEMENTS_PER_CHUNK];
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
-            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
-            this.slice = slices.get(0);
             this.numValues = numValues;
             int bitWidth = slice.getUnsignedByte(0);
             VectorIntegerPacker.unpack(slice.getInts(4, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
@@ -194,22 +194,18 @@ public class InlineBitpackingEncoding
         }
     }
 
-    public class BitPackLongDecoder
-            implements MiniBlockDecoder<long[]>
+    public class LongBlockDecoder
+            implements BlockDecoder<long[]>
     {
-        private Slice slice;
         private int numValues;
         private final long[] data = new long[MAX_ELEMENTS_PER_CHUNK];
 
         @Override
-        public void init(List<Slice> slices, int numValues)
+        public void init(Slice slice, int numValues)
         {
-            checkArgument(slices.size() == 1);
-            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
-            this.slice = slices.get(0);
             this.numValues = numValues;
-            long bitWidth = slice.getLong(0);
-            VectorLongPacker.unpack(slice.getLongs(8, toIntExact(MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth)), toIntExact(bitWidth), data);
+            int bitWidth = slice.getUnsignedByte(0);
+            VectorLongPacker.unpack(slice.getLongs(8, MAX_ELEMENTS_PER_CHUNK * bitWidth / uncompressedBitWidth), bitWidth, data);
         }
 
         @Override
@@ -217,6 +213,86 @@ public class InlineBitpackingEncoding
         {
             checkArgument(sourceIndex + length <= numValues);
             System.arraycopy(data, sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class ByteMiniBlockDecoder
+            implements MiniBlockDecoder<byte[]>
+    {
+        private final ByteBlockDecoder blockDecoder = new ByteBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, byte[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class ShortMiniBlockDecoder
+            implements MiniBlockDecoder<short[]>
+    {
+        private final ShortBlockDecoder blockDecoder = new ShortBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, short[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class IntMiniBlockDecoder
+            implements MiniBlockDecoder<int[]>
+    {
+        private final IntBlockDecoder blockDecoder = new IntBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, int[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
+        }
+    }
+
+    public class LongMiniBlockDecoder
+            implements MiniBlockDecoder<long[]>
+    {
+        private final LongBlockDecoder blockDecoder = new LongBlockDecoder();
+
+        @Override
+        public void init(List<Slice> slices, int numValues)
+        {
+            checkArgument(slices.size() == 1);
+            checkArgument(numValues <= MAX_ELEMENTS_PER_CHUNK);
+            blockDecoder.init(slices.getFirst(), numValues);
+        }
+
+        @Override
+        public void read(int sourceIndex, long[] destination, int destinationIndex, int length)
+        {
+            blockDecoder.read(sourceIndex, destination, destinationIndex, length);
         }
     }
 }
