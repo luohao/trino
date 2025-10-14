@@ -2426,7 +2426,7 @@
             <dependency>
                 <groupId>com.lancedb</groupId>
                 <artifactId>lance-core</artifactId>
-                <version>0.34.0</version>
+                <version>0.37.0</version>
                 <scope>test</scope>
             </dependency>
 

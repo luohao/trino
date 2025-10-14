@@ -119,7 +119,7 @@ public class FsstEncoding
                 }
                 else {
                     i++;
-                    output.add(input.getByte(i * FSST_MAX_SYMBOL_SIZE));
+                    output.add(input.getByte(i));
                     count++;
                 }
             }

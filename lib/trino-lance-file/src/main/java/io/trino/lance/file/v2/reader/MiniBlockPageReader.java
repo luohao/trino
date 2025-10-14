@@ -13,12 +13,15 @@
  */
 package io.trino.lance.file.v2.reader;
 
+import com.github.luohao.fastlanes.bitpack.VectorShortPacker;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
 import io.trino.lance.file.LanceDataSource;
 import io.trino.lance.file.v2.encoding.FlatValueEncoding;
+import io.trino.lance.file.v2.encoding.InlineBitpackingEncoding;
 import io.trino.lance.file.v2.encoding.LanceEncoding;
 import io.trino.lance.file.v2.encoding.MiniBlockDecoder;
+import io.trino.lance.file.v2.encoding.OutOfLineBitpackingEncoding;
 import io.trino.lance.file.v2.metadata.DiskRange;
 import io.trino.lance.file.v2.metadata.MiniBlockLayout;
 import io.trino.lance.file.v2.metadata.RepDefLayer;
@@ -38,6 +41,7 @@ import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
+import static io.trino.lance.file.v2.encoding.InlineBitpackingEncoding.MAX_ELEMENTS_PER_CHUNK;
 import static io.trino.lance.file.v2.metadata.RepDefLayer.NULLABLE_ITEM;
 import static io.trino.lance.file.v2.reader.IntArrayBufferAdapter.INT_ARRAY_BUFFER_ADAPTER;
 import static java.lang.Math.toIntExact;
@@ -425,26 +429,42 @@ public class MiniBlockPageReader
         }
     }
 
-    private int[] loadRepetitionLevels(Slice slice)
+    private int[] loadLevels(LanceEncoding encoding, Slice slice, int numLevels)
     {
-        checkArgument(repetitionEncoding.isPresent());
-        checkArgument(repetitionEncoding.get() instanceof FlatValueEncoding);
-        checkArgument(((FlatValueEncoding) repetitionEncoding.get()).getBytesPerValue() == 2);
-        return readUnsignedShorts(slice);
+        return switch (encoding) {
+            case FlatValueEncoding flat -> {
+                checkArgument(flat.getBytesPerValue() == 2);
+                yield readUnsignedShorts(slice, numLevels);
+            }
+            case OutOfLineBitpackingEncoding outOfLineBitpacking -> {
+                checkArgument(outOfLineBitpacking.getUncompressedBitsPerValue() == 16);
+                short[] buffer = outOfLineBitpacking.unpackShorts(slice, numLevels);
+                int[] repetitionLevels = new int[numLevels];
+                for (int i = 0; i < numLevels; i++) {
+                    repetitionLevels[i] = buffer[i] & 0xFFFF;
+                }
+                yield repetitionLevels;
+            }
+            case InlineBitpackingEncoding inlineBitpacking -> {
+                checkArgument(inlineBitpacking.getUncompressedBitWidth() == 16);
+                short[] buffer = new short[MAX_ELEMENTS_PER_CHUNK];
+                int bitWidth = slice.getUnsignedShort(0);
+                VectorShortPacker.unpack(slice.getShorts(2, bitWidth * MAX_ELEMENTS_PER_CHUNK / Short.SIZE), bitWidth, buffer);
+                int[] repetitionLevels = new int[numLevels];
+                for (int i = 0; i < numLevels; i++) {
+                    repetitionLevels[i] = buffer[i] & 0xFFFF;
+                }
+                yield repetitionLevels;
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + repetitionEncoding.get());
+        };
     }
 
-    private int[] loadDefinitionLevels(Slice slice)
+    private int[] readUnsignedShorts(Slice slice, int numLevels)
     {
-        checkArgument(definitionEncoding.isPresent());
-        checkArgument(definitionEncoding.get() instanceof FlatValueEncoding);
-        checkArgument(((FlatValueEncoding) definitionEncoding.get()).getBytesPerValue() == 2);
-        return readUnsignedShorts(slice);
-    }
-
-    private int[] readUnsignedShorts(Slice slice)
-    {
+        checkArgument(numLevels == slice.length() / 2);
         int[] data = new int[slice.length() / 2];
-        for (int i = 0; i < slice.length() / 2; i++) {
+        for (int i = 0; i < numLevels; i++) {
             data[i] = slice.getUnsignedShort(i * 2);
         }
         return data;
@@ -497,6 +517,7 @@ public class MiniBlockPageReader
             this.numValues = numValues;
             // decode header
             int offset = 0;
+            int numLevels = chunk.getUnsignedShort(offset);
             // skip first 2 bytes which stores number of levels
             offset += 2;
 
@@ -521,7 +542,7 @@ public class MiniBlockPageReader
 
             // load rep/def
             if (repetitionEncoding.isPresent()) {
-                repetitions = loadRepetitionLevels(chunk.slice(offset, repetitionSize));
+                repetitions = loadLevels(repetitionEncoding.get(), chunk.slice(offset, repetitionSize), numLevels);
                 offset += repetitionSize;
                 offset += padding(offset);
             }
@@ -529,7 +550,7 @@ public class MiniBlockPageReader
                 repetitions = null;
             }
             if (definitionEncoding.isPresent()) {
-                definitions = loadDefinitionLevels(chunk.slice(offset, definitionSize));
+                definitions = loadLevels(definitionEncoding.get(), chunk.slice(offset, definitionSize), numLevels);
                 offset += definitionSize;
                 offset += padding(offset);
             }

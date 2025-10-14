@@ -13,6 +13,12 @@
     <packaging>trino-plugin</packaging>
     <description>Trino - Lance table connector</description>
 
+    <properties>
+        <air.test.jvm.additional-arguments>${air.test.jvm.additional-arguments.default}
+            --add-opens=java.base/java.nio=ALL-UNNAMED
+            --sun-misc-unsafe-memory-access=allow</air.test.jvm.additional-arguments>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>build.buf.gen</groupId>
@@ -136,8 +142,20 @@
         </dependency>
 
         <dependency>
+            <groupId>com.lancedb</groupId>
+            <artifactId>lance-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-client</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -149,7 +167,8 @@
 
         <dependency>
             <groupId>io.trino</groupId>
-            <artifactId>trino-memory</artifactId>
+            <artifactId>trino-main</artifactId>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
@@ -162,6 +181,36 @@
         <dependency>
             <groupId>io.trino</groupId>
             <artifactId>trino-tpch</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino.tpch</groupId>
+            <artifactId>tpch</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
+            <artifactId>arrow-c-data</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
+            <artifactId>arrow-memory-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
+            <artifactId>arrow-vector</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 

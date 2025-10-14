@@ -29,6 +29,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.trino.spi.type.BigintType.BIGINT;
+import static io.trino.spi.type.DateType.DATE;
 import static io.trino.spi.type.DoubleType.DOUBLE;
 import static io.trino.spi.type.IntegerType.INTEGER;
 import static io.trino.spi.type.RealType.REAL;
@@ -156,6 +157,7 @@ public class Field
                 checkArgument(children.size() == 1);
                 yield new ArrayType(children.get(0).toTrinoType());
             }
+            case LogicalType.DateType _ -> DATE;
             default -> throw new IllegalArgumentException("Unsupported type: " + logicalType);
         };
     }

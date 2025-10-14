@@ -13,10 +13,12 @@
  */
 package io.trino.plugin.lance;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.trino.lance.file.v2.metadata.Field;
 import io.trino.plugin.lance.catalog.BaseTable;
 import io.trino.plugin.lance.catalog.TrinoCatalog;
+import io.trino.plugin.lance.metadata.Manifest;
 import io.trino.spi.TrinoException;
 import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ColumnMetadata;
@@ -25,16 +27,21 @@ import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTableMetadata;
 import io.trino.spi.connector.ConnectorTableVersion;
+import io.trino.spi.connector.RelationColumnsMetadata;
 import io.trino.spi.connector.SchemaTableName;
+import io.trino.spi.connector.SchemaTablePrefix;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
-import static io.trino.plugin.lance.LanceErrorCode.LANCE_TABLE_NOT_FOUND;
 import static io.trino.spi.StandardErrorCode.NOT_SUPPORTED;
 import static io.trino.spi.type.BigintType.BIGINT;
 import static java.util.Objects.requireNonNull;
@@ -42,6 +49,8 @@ import static java.util.Objects.requireNonNull;
 public class LanceMetadata
         implements ConnectorMetadata
 {
+    public static final int GET_METADATA_BATCH_SIZE = 1000;
+
     private final TrinoCatalog catalog;
 
     @Inject
@@ -55,10 +64,10 @@ public class LanceMetadata
         io.trino.spi.type.Type versionType = version.getVersionType();
         return switch (version.getPointerType()) {
             // TODO: list and search versions to do temporal time travel
-            case TEMPORAL -> throw new TrinoException(NOT_SUPPORTED, "Temporal table version is not supported");
+            case TEMPORAL -> throw new TrinoException(NOT_SUPPORTED, "This connector does not support versioned tables with temporal version");
             case TARGET_ID -> {
                 if (versionType != BIGINT) {
-                    throw new TrinoException(NOT_SUPPORTED, "Unsupported version type: " + versionType);
+                    throw new TrinoException(NOT_SUPPORTED, "This connector does not support versioned tables: unsupported type for table version " + versionType.getDisplayName());
                 }
                 // TODO: support String type target id
                 yield (long) version.getVersion();
@@ -79,18 +88,45 @@ public class LanceMetadata
     }
 
     @Override
-    public ConnectorTableHandle getTableHandle(
-            ConnectorSession session,
-            SchemaTableName tableName,
-            Optional<ConnectorTableVersion> startVersion,
-            Optional<ConnectorTableVersion> endVersion)
+    public Iterator<RelationColumnsMetadata> streamRelationColumns(ConnectorSession session, Optional<String> schemaName, UnaryOperator<Set<SchemaTableName>> relationFilter)
+    {
+        Map<SchemaTableName, RelationColumnsMetadata> relationColumns = new HashMap<>();
+
+        SchemaTablePrefix prefix = schemaName.map(SchemaTablePrefix::new)
+                .orElseGet(SchemaTablePrefix::new);
+
+        requireNonNull(prefix, "prefix is null");
+        List<SchemaTableName> schemaTableNames;
+        if (prefix.getTable().isEmpty()) {
+            schemaTableNames = catalog.listTables(session, prefix.getSchema());
+        }
+        else {
+            schemaTableNames = ImmutableList.of(prefix.toSchemaTableName());
+        }
+
+        for (SchemaTableName tableName : schemaTableNames) {
+            Optional<BaseTable> table = catalog.loadTable(session, tableName);
+            if (table.isPresent()) {
+                Manifest manifest = table.get().loadManifest(Optional.empty());
+                List<ColumnMetadata> columns = manifest.getFields().stream().map(field -> new ColumnMetadata(field.getName(), field.toTrinoType())).collect(toImmutableList());
+                relationColumns.put(tableName, RelationColumnsMetadata.forTable(tableName, columns));
+            }
+        }
+
+        return relationFilter.apply(relationColumns.keySet()).stream()
+                .map(relationColumns::get)
+                .iterator();
+    }
+
+    @Override
+    public ConnectorTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName, Optional<ConnectorTableVersion> startVersion, Optional<ConnectorTableVersion> endVersion)
     {
         if (startVersion.isPresent()) {
             throw new TrinoException(NOT_SUPPORTED, "Read table with startRowPosition version is not supported");
         }
         Optional<BaseTable> loadedTable = catalog.loadTable(session, tableName);
         if (loadedTable.isEmpty()) {
-            throw new TrinoException(LANCE_TABLE_NOT_FOUND, "Table not found: " + tableName);
+            return null;
         }
         BaseTable baseTable = loadedTable.get();
         Optional<Long> version;
@@ -109,9 +145,7 @@ public class LanceMetadata
         checkArgument(tableHandle instanceof LanceTableHandle);
         LanceTableHandle table = (LanceTableHandle) tableHandle;
 
-        List<ColumnMetadata> columns = table.manifest().getFields().stream()
-                .map(field -> new ColumnMetadata(field.getName(), field.toTrinoType()))
-                .collect(toImmutableList());
+        List<ColumnMetadata> columns = table.manifest().getFields().stream().map(field -> new ColumnMetadata(field.getName(), field.toTrinoType())).collect(toImmutableList());
         return new ConnectorTableMetadata(table.name(), columns);
     }
 
@@ -120,9 +154,7 @@ public class LanceMetadata
     {
         checkArgument(tableHandle instanceof LanceTableHandle);
         LanceTableHandle table = (LanceTableHandle) tableHandle;
-        return table.manifest().getFields().stream()
-                .collect(toImmutableMap(Field::getName,
-                        field -> new LanceColumnHandle(field.getId(), field.getName(), field.toTrinoType())));
+        return table.manifest().getFields().stream().collect(toImmutableMap(Field::getName, field -> new LanceColumnHandle(field.getId(), field.getName(), field.toTrinoType())));
     }
 
     @Override

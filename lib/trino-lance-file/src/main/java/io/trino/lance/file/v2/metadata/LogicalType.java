@@ -29,7 +29,8 @@ public sealed interface LogicalType
         LogicalType.BinaryType,
         LogicalType.FixedSizeListType,
         LogicalType.ListType,
-        LogicalType.StructType
+        LogicalType.StructType,
+        LogicalType.DateType
 {
     static LogicalType from(String type)
     {
@@ -54,6 +55,11 @@ public sealed interface LogicalType
             }
             case LIST -> new ListType();
             case STRUCT -> new StructType();
+            case DATE32 -> {
+                checkArgument(components.length == 2, "DATE32 signature must have exactly 2 components");
+                checkArgument(components[1].toLowerCase(ENGLISH).equals("day"), "only supports date32:day");
+                yield new DateType();
+            }
         };
     }
 
@@ -69,7 +75,8 @@ public sealed interface LogicalType
         BINARY,
         FIXED_SIZE_LIST,
         LIST,
-        STRUCT
+        STRUCT,
+        DATE32
     }
 
     record Int8Type()
@@ -131,6 +138,11 @@ public sealed interface LogicalType
     }
 
     record StructType()
+            implements LogicalType
+    {
+    }
+
+    record DateType()
             implements LogicalType
     {
     }

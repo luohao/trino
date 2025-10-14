@@ -110,8 +110,8 @@ public class LanceTester
 
     private static void assertColumnValueEquals(Type type, Object actual, Object expected)
     {
-        if (actual == null) {
-            assertThat(expected).isNull();
+        if (expected == null) {
+            assertThat(actual).isNull();
             return;
         }
 

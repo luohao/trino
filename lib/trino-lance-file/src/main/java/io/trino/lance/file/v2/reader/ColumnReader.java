@@ -38,7 +38,8 @@ public interface ColumnReader
                  LogicalType.FloatType _,
                  LogicalType.DoubleType _,
                  LogicalType.StringType _,
-                 LogicalType.BinaryType _ -> new PrimitiveColumnReader(dataSource, field, columnMetadata.get(field.getId()), readRanges, memoryContext);
+                 LogicalType.BinaryType _,
+                 LogicalType.DateType _ -> new PrimitiveColumnReader(dataSource, field, columnMetadata.get(field.getId()), readRanges, memoryContext);
             case LogicalType.ListType _ -> new ListColumnReader(dataSource, field, columnMetadata, readRanges, memoryContext);
             case LogicalType.StructType _ -> new StructColumnReader(dataSource, field, columnMetadata, readRanges, memoryContext);
             default -> throw new RuntimeException("Unsupported logical type: " + field.getLogicalType());

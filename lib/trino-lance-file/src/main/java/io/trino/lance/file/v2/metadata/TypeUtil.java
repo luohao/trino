@@ -55,7 +55,8 @@ public class TypeUtil
                  LogicalType.FloatType _,
                  LogicalType.DoubleType _,
                  LogicalType.StringType _,
-                 LogicalType.BinaryType _ -> visitor.primitive(field);
+                 LogicalType.BinaryType _,
+                 LogicalType.DateType _ -> visitor.primitive(field);
             case LogicalType.StructType _ -> {
                 List<T> results = new ArrayList<>(field.getChildren().size());
                 for (Field child : field.getChildren()) {
