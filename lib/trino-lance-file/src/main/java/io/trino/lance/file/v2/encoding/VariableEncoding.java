@@ -55,20 +55,17 @@ public class VariableEncoding
             return new VariableWidthBlock(0, EMPTY_SLICE, new int[1], Optional.empty());
         }
 
-        // The first byte contains bytes_per_offset info
-        short bitsPerOffset = slice.getUnsignedByte(0);
-        return switch (bitsPerOffset) {
-            case 32 -> {
-                long numValues = slice.getUnsignedInt(1);
-                checkArgument(numValues == count);
-                long bytesStartOffset = slice.getUnsignedInt(5);
-                checkArgument(bytesStartOffset == (long) Integer.BYTES * (count + 1) + 9);
-                int[] offsets = slice.getInts(9, count + 1);
-                Slice data = slice.slice(toIntExact(bytesStartOffset), toIntExact(slice.length() - bytesStartOffset));
-                yield new VariableWidthBlock(count, data, offsets, Optional.empty());
-            }
-            default -> throw new UnsupportedOperationException("Unsupported bits per offset: " + bitsPerOffset);
-        };
+        int bitsPerOffset = toIntExact(slice.getUnsignedInt(0));
+        if (bitsPerOffset == 32) {
+            int offsetStart = 8;
+            long bytesStartOffset = slice.getUnsignedInt(4);
+            int[] offsets = slice.getInts(offsetStart, count + 1);
+            Slice data = slice.slice(toIntExact(bytesStartOffset), toIntExact(slice.length() - bytesStartOffset));
+            return new VariableWidthBlock(count, data, offsets, Optional.empty());
+        }
+        else {
+            throw new UnsupportedOperationException("Unsupported bits per offset: " + bitsPerOffset);
+        }
     }
 
     public static class VariableBinaryDecoder

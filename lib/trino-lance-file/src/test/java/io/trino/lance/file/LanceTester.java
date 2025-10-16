@@ -15,6 +15,8 @@ package io.trino.lance.file;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.lancedb.lance.WriteParams;
 import com.lancedb.lance.file.LanceFileWriter;
 import io.trino.spi.block.Block;
 import io.trino.spi.connector.SourcePage;
@@ -144,7 +146,7 @@ public class LanceTester
             throws Exception
     {
         BufferAllocator allocator = new RootAllocator();
-        LanceFileWriter writer = LanceFileWriter.open(outputFile.getPath(), allocator, null);
+        LanceFileWriter writer = LanceFileWriter.open(outputFile.getPath(), allocator, null, Optional.of(WriteParams.LanceFileVersion.V2_1), ImmutableMap.of());
         String columnName = type.getDisplayName();
         Field field = toArrowField(columnName, type, nullable);
         Schema schema = new Schema(ImmutableList.of(field), null);

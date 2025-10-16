@@ -310,7 +310,7 @@
             <dependency>
                 <groupId>build.buf.gen</groupId>
                 <artifactId>lancedb_lance_protocolbuffers_java</artifactId>
-                <version>25.8.0.1.20250908232953.139701824b46</version>
+                <version>25.8.0.1.20251015015903.554c918d1601</version>
             </dependency>
 
             <dependency>
@@ -2426,7 +2426,7 @@
             <dependency>
                 <groupId>com.lancedb</groupId>
                 <artifactId>lance-core</artifactId>
-                <version>0.37.0</version>
+                <version>0.38.3-beta.3</version>
                 <scope>test</scope>
             </dependency>
 

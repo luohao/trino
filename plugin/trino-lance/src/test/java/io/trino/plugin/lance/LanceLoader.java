@@ -131,7 +131,7 @@ public class LanceLoader
                 try (ArrowReader reader = new SimpleArrowReader(root, allocator); ArrowArrayStream stream = ArrowArrayStream.allocateNew(allocator)) {
                     Data.exportArrayStream(allocator, reader, stream);
                     WriteParams writeParams = new WriteParams.Builder()
-                            .withFileFormatVersion("2.1")
+                            .withDataStorageVersion(WriteParams.LanceFileVersion.V2_1)
                             .build();
                     Dataset dataset = Dataset.create(allocator, stream, tablePath, writeParams);
                     dataset.close();
@@ -189,47 +189,6 @@ public class LanceLoader
                 return root;
             }
         }
-//        @Override
-//        public Void build(Map<String, String> setSessionProperties, Set<String> resetSessionProperties)
-//        {
-//            try (VectorSchemaRoot root = VectorSchemaRoot.create(schema.get(), allocator)) {
-//                root.allocateNew();
-//                List<Field> fields = schema.get().getFields();
-//                List<FieldVector> fieldVectors = fields.stream().map(root::getVector).collect(toImmutableList());
-//
-//                for (int i = 0; i < data.get().size(); i++) {
-//                    List<Object> row = data.get().get(i);
-//                    for (int filedIdx = 0; filedIdx < fields.size(); filedIdx++) {
-//                        Type fieldType = types.get().get(filedIdx);
-//                        Object value = row.get(filedIdx);
-//                        switch (fieldType) {
-//                            case IntegerType _ -> ((IntVector) fieldVectors.get(filedIdx)).setSafe(i, ((Number) value).intValue());
-//                            case BigintType _ -> ((BigIntVector) fieldVectors.get(filedIdx)).setSafe(i, ((Number) value).longValue());
-//                            case DoubleType _ -> ((Float8Vector) fieldVectors.get(filedIdx)).setSafe(i, ((Number) value).doubleValue());
-//                            case VarcharType _ -> ((VarCharVector) fieldVectors.get(filedIdx)).setSafe(i, ((String) value).getBytes(StandardCharsets.UTF_8));
-//                            case DateType _ -> ((DateDayVector) fieldVectors.get(filedIdx)).setSafe(i, parseDate((String) value));
-//                            default -> throw new IllegalStateException("Unsupported fieldType: " + fieldType);
-//                        }
-//                    }
-//                }
-//                root.setRowCount(data.get().size());
-//                WriteParams writeParams = new WriteParams.Builder()
-//                        .withDataStorageVersion("2.1")
-//                        .build();
-////                try (Dataset dataset = Dataset.create(allocator, tablePath, schema.get(), writeParams)) {
-////                    List<FragmentMetadata> fragments = Fragment.create(tablePath, allocator, root, writeParams);
-////                    Transaction transaction = dataset.newTransactionBuilder().operation(Append.builder().fragments(fragments).build()).transactionProperties(ImmutableMap.of("transactionType", "APPEND")).build();
-////                    transaction.commit().close();
-////                }
-////                Dataset.create(allocator, root, tablePath, writeParams);
-//                try (ArrowSchema arrowSchema = ArrowSchema.allocateNew(allocator);
-//                        ArrowArray arrowArray = ArrowArray.allocateNew(allocator)) {
-//                    Data.exportVectorSchemaRoot(allocator, root, null, arrowArray, arrowSchema);
-//                Dataset.create(allocator, arrowArray, tablePath, writeParams);
-//                }
-//            }
-//            return null;
-//        }
     }
 
     private Schema getArrowSchema(List<Column> columns)
