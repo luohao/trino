@@ -93,7 +93,6 @@ public class LanceReader
         // prefetch all metadata
         Slice metadataSlice = dataSource.readTail(toIntExact(dataSource.getEstimatedSize() - schemaBufferLocation.getPosition()));
         // read file descriptor
-        // FIXME: I don't see this documented in the format spec, but the rust implementation does this.
         Slice schemaSlice = metadataSlice.slice(0, toIntExact(schemaBufferLocation.getLength()));
         build.buf.gen.lance.file.FileDescriptor fileDescriptor = build.buf.gen.lance.file.FileDescriptor.parseFrom(schemaSlice.toByteBuffer());
         checkArgument(fileDescriptor.hasSchema(), "FileDescriptor does not contain a schema");

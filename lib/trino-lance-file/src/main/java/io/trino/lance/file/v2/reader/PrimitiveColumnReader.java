@@ -124,7 +124,6 @@ public class PrimitiveColumnReader
             }
 
             // decode the page with ranges for current batch
-            // FIXME: how do we amortize the cost of page metadata read, maybe caching?
             if (pageReader == null) {
                 pageReader = createPageReader(currentPage);
             }

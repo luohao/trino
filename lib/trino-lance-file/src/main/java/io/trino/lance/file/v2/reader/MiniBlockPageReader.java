@@ -58,7 +58,6 @@ public class MiniBlockPageReader
     private final List<RepDefLayer> layers;
     private final int maxVisibleDefinition;
     private final long numBuffers;
-    // total number of rows in this page
     private final long numRows;
     private final List<ChunkMetadata> chunks;
     private final BufferAdapter valueBufferAdapter;
@@ -158,13 +157,11 @@ public class MiniBlockPageReader
     @Override
     public DecodedPage decodeRanges(List<Range> ranges)
     {
-        // FIXME: maybe create temp buffer within the scope of readRanges()?
         valuesBuffer.reset();
         repetitionBuffer.reset();
         definitionBuffer.reset();
         levelOffset = 0;
 
-        // ChunkInstructions::schedule_instructions
         for (Range range : ranges) {
             long rowsNeeded = range.length();
             boolean needPreamble = false;
@@ -485,7 +482,6 @@ public class MiniBlockPageReader
             // decode header
             int offset = 0;
             int numLevels = chunk.getUnsignedShort(offset);
-            // skip first 2 bytes which stores number of levels
             offset += 2;
 
             int repetitionSize = 0;
@@ -507,7 +503,7 @@ public class MiniBlockPageReader
             }
             offset += padding(offset);
 
-            // load rep/def
+            // load repetition/definition levels
             if (repetitionEncoding.isPresent()) {
                 repetitions = loadLevels(repetitionEncoding.get(), chunk.slice(offset, repetitionSize), numLevels);
                 offset += repetitionSize;

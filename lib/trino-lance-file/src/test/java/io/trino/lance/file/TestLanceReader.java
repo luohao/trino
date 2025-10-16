@@ -63,7 +63,6 @@ public class TestLanceReader
     public void testSmallNumericShortSequence()
             throws Exception
     {
-        // miniblock with flat encoding
         testRoundTripNumeric(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17, 19, 23, 27)), 7));
     }
 
@@ -71,7 +70,6 @@ public class TestLanceReader
     public void testSmallNumericLongSequence()
             throws Exception
     {
-        // miniblock with inline bitpacking
         testRoundTripNumeric(limit(cycle(ImmutableList.of(1, 3, 5, 7, 11, 13, 17, 19, 23, 27)), 30_000));
     }
 
@@ -79,7 +77,6 @@ public class TestLanceReader
     public void testLargeNumeric()
             throws Exception
     {
-        // looks like Lance writer always do bitpacking even for large numbers
         testRoundTripNumeric(limit(cycle(ImmutableList.of(Long.MAX_VALUE, Long.MAX_VALUE - 1, Long.MAX_VALUE - 2)), 30_000));
     }
 
@@ -104,7 +101,6 @@ public class TestLanceReader
         tester.testRoundTrip(VARCHAR, newArrayList(limit(cycle(doubleSequence(1.0, 0.001, 257)), 30_000)).stream().map(Object::toString).collect(toList()));
     }
 
-    // FIXME: implement FSST encoding
     @Test
     public void testStringSequence()
             throws Exception

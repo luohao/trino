@@ -74,7 +74,6 @@ public class CompositeUnraveler
         }
         else {
             BooleanArrayList validity = unravelers.stream()
-                    // FIXME: this needs some more testing or clarification from lance if it's possible to have some pages being all valid but some not
                     .map(unraveler -> unraveler.calculateNulls().orElseThrow())
                     .collect(BooleanArrayList::new,
                             (buffer, array) -> {

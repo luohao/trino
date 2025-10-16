@@ -18,7 +18,6 @@ import io.trino.lance.file.v2.reader.BufferAdapter;
 public class FixedSizeListEncoding
         implements LanceEncoding
 {
-    // FIXME: impelement
     @Override
     public BufferAdapter getBufferAdapter()
     {
